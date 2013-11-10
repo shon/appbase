@@ -1,0 +1,15 @@
+gevent
+sqlalchemy
+psycopg2
+psycogreen
+flask
+html2text
+# Services
+keen
+mailchimp
+# Dev 
+pss
+ipython
+nose
+yanc # color output plugin for nose --with-yanc
+nose-timer # nosetests --with-timer
