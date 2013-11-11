@@ -1,4 +1,4 @@
-from gevent.local import local
+import appbase.bootstrap as bootstrap
 
 import appbase.users.apis as userapis
 from appbase.publishers import satransaction
@@ -17,7 +17,9 @@ def setUp():
 
 def test_create():
     create = satransaction(userapis.create)
+    count = satransaction(userapis.count)
     assert create(**test_user_data) == 1
+    assert count() == 1
 
 
 def test_authenticate():
@@ -45,6 +47,6 @@ def test_session_lookups():
     for uid in uids:
         sess = sessionslib.get_or_create(uid)
         sid = sess['sid']
-        assert sessionslib.rev_lookup(sid) == uid
+        assert sessionslib.sid2uid(sid) == uid
         sessionslib.destroy(uid)
-        assert sessionslib.rev_lookup(sid) is None
+        assert sessionslib.sid2uid(sid) is None

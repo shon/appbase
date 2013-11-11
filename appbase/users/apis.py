@@ -1,6 +1,6 @@
 import hashlib
 
-from sqlalchemy.sql import select
+from sqlalchemy.sql import select, func
 
 import settings
 import appbase.helpers
@@ -111,6 +111,12 @@ def disable(uid):
     conn = sa.connect()
     q = users.update().values(active=False).where(users.c.id == uid)
     conn.execute(q)
+
+
+def count():
+    conn = sa.connect()
+    q = select([func.count(users.c.id)])
+    return conn.execute(q).fetchone()[0]
 
 
 def request_reset_password(uid):

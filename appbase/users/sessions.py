@@ -1,6 +1,5 @@
 import appbase.redisutils as redisutils
 from appbase.helpers import gen_random_token as gen_sid
-from settings import SALT
 
 rconn = redisutils.rconn
 session_key = lambda uid: 'sid:' + str(uid)
@@ -16,6 +15,12 @@ def create(uid, ttl=(30 * 24 * 60 * 60)):
 
 def get(uid):
     return rconn.hgetall(session_key(uid))
+
+
+def sid2uid(sid):
+    uid = rconn.hget(rev_lookup_key, sid)
+    if uid:
+        return int(uid)
 
 
 def get_or_create(uid):
@@ -41,8 +46,3 @@ def destroy(uid):
     rconn.delete(sk)
     rconn.hdel(rev_lookup_key, sid)
     return True
-
-def rev_lookup(sid):
-    uid = rconn.hget(rev_lookup_key, sid)
-    if not uid is None:
-        return int(rconn.hget(rev_lookup_key, sid))
