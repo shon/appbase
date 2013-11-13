@@ -22,7 +22,7 @@ def Column_id():
 
 
 def Column_active():
-    Column('active', BOOLEAN, default=True)
+    return Column('active', BOOLEAN, default=True)
 
 
 def tr_start(tls):
