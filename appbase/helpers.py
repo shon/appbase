@@ -18,7 +18,7 @@ def send_email(sender, recipient, subject, text=None, html=None, images=[]):
     html: html message
     images: list of cid and image paths. eg. [('logo', 'images/logo.png'), ('Bruce', 'images/bat.png')]
     """
-    assert any(text, html), 'please provide html or text'
+    assert any((text, html)), 'please provide html or text'
 
     if html and not text:
         text = html2text.html2text(html)
