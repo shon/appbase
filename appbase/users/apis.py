@@ -20,11 +20,14 @@ def gen_signup_key(email):
     return SIGNUP_KEY_PREFIX + email
 
 
+def render_template(path, data):
+    tmpl = open(path).read()
+    return tmpl.format(**data)
+
+
 def welcome(email, data={}):
-    text_tmpl = open('users/templates/welcome.txt').read()
-    text = text_tmpl.format(data)
-    #html_tmpl = open('users/templates/welcome.html').read()
-    #html = html_tmpl.format(data)
+    text = render_template('users/templates/welcome.txt', data)
+    #html = render_template('users/templates/invite.html', data)
     #images = [('signature', open('users/templates/logo.png').read())]
     sender = settings.WELCOME_SENDER
     recipient = email
@@ -35,25 +38,31 @@ def welcome(email, data={}):
 
 def invite(name, email):
     data = dict(NAME=name, INVITER_NAME=settings.INVITER_NAME, INVITE_LINK=settings.INVITE_LINK)
-    html_tmpl = open('users/templates/invite.html').read()
-    html = html_tmpl.format(data)
+    html = render_template('users/templates/invite.html', data)
     sender = '{INVITER_NAME} <{INVITER_EMAIL}>'.format(INVITER_NAME=INVITER_NAME, INVITER_EMAIL=INVITER_EMAIL)
     appbase.helpers.send_email(sender, recipient, subject, html=html)
     return True
 
 
-def signup(fname, lname, email, password):
+def signup(fname, lname, email, password, return_token=False):
+    """
+    return_token: returns token instead of True. This should be used only in testing or server side calls.
+    """
     token = gen_random_token()
     key = gen_signup_key(token)
     d = dict(fname=fname, lname=lname, email=email, password=password)
     rconn.hmset(key, d)
     rconn.expire(key, SIGNUP_TTL)
-    return True
+    confirmation_link = settings.CONFIRMATION_LINK.format(TOKEN=token)
+    data = dict(NAME=fname, CONFIRMATION_LINK=confirmation_link, SIGNUP_SENDER=settings.SIGNUP_SENDER)
+    html = render_template('users/templates/confirmation.html', data)
+    appbase.helpers.send_email(settings.SIGNUP_SENDER, email, settings.SIGNUP_SUBJECT, html=html)
+    return token if return_token else True
 
 
 def complete_signup(token):
     key = gen_signup_key(token)
-    data = rconn.hmget(key)
+    data = rconn.hgetall(key)
     return create(**data)
 
 
@@ -70,6 +79,14 @@ def create(fname, lname, email, password, groups=[], connection=None):
     conn.execute(q)
     q = select([users.c.id]).where(users.c.email == email)
     return conn.execute(q).fetchone()[0]
+
+
+def info(email):
+    conn = sa.connect()
+    _fields = [users.c.id, users.c.fname, users.c.lname, users.c.active, users.c.created]
+    q = select(_fields).where(users.c.email == email)
+    res = conn.execute(q)
+    return dict(zip(res.keys(), res.fetchone()))
 
 
 def list():
