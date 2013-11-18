@@ -11,13 +11,23 @@ from appbase.errors import SecurityViolation
 from appbase.users.schema import users
 from appbase.helpers import gen_random_token
 
-SIGNUP_KEY_PREFIX = 'invite:'
+SIGNUP_KEY_PREFIX = 'signup:'
+SIGNUP_LOOKUP_PREFIX = 'signuplookup:'
 SIGNUP_TTL = 2 * 7 * 24 * 60 * 60
 rconn = redisutils.rconn
 
 
-def gen_signup_key(email):
-    return SIGNUP_KEY_PREFIX + email
+def gen_signup_key(token):
+    return SIGNUP_KEY_PREFIX + token
+
+
+def gen_signuploopkup_key(email):
+    return SIGNUP_LOOKUP_PREFIX + email
+
+
+def signupemail2token(email):
+    key = gen_signuploopkup_key(email)
+    return rconn.get(key)
 
 
 def render_template(path, data):
@@ -44,20 +54,22 @@ def invite(name, email):
     return True
 
 
-def signup(fname, lname, email, password, return_token=False):
-    """
-    return_token: returns token instead of True. This should be used only in testing or server side calls.
-    """
-    token = gen_random_token()
-    key = gen_signup_key(token)
-    d = dict(fname=fname, lname=lname, email=email, password=password)
-    rconn.hmset(key, d)
-    rconn.expire(key, SIGNUP_TTL)
+def signup(fname, lname, email, password):
+    lookup_key = gen_signuploopkup_key(email)
+    token = rconn.get(lookup_key)
+    if not token:
+        token = gen_random_token()
+        key = gen_signup_key(token)
+        rconn.set(lookup_key, token)
+        rconn.expire(lookup_key, SIGNUP_TTL)
+        d = dict(fname=fname, lname=lname, email=email, password=password)
+        rconn.hmset(key, d)
+        rconn.expire(key, SIGNUP_TTL)
     confirmation_link = settings.CONFIRMATION_LINK.format(TOKEN=token)
     data = dict(NAME=fname, CONFIRMATION_LINK=confirmation_link, SIGNUP_SENDER=settings.SIGNUP_SENDER)
     html = render_template('users/templates/confirmation.html', data)
     appbase.helpers.send_email(settings.SIGNUP_SENDER, email, settings.SIGNUP_SUBJECT, html=html)
-    return token if return_token else True
+    return True
 
 
 def complete_signup(token):
