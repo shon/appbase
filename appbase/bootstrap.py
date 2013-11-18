@@ -14,9 +14,9 @@ def green_pg():
     psycogreen.gevent.patch_psycopg()
 
 
-def check_settings():
+def check_settings(conf):
     settings_path = 'settings.py'
-    dev_settings_path = 'settings-available/dev.py'
+    dev_settings_path = 'settings-available/{0}.py'.format(conf)
     d = dict(dev_settings_path=dev_settings_path, settings_path=settings_path)
     if os.path.exists(settings_path):
         if not os.path.islink(settings_path):
@@ -37,6 +37,3 @@ def configure_logging(logger, name, debug=True):
     formatter = logging.Formatter('[%(levelname)s] %(asctime)s: %(message)s')
     file_handler.setFormatter(formatter)
     logger.addHandler(file_handler)
-
-use_gevent()
-check_settings()
