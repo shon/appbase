@@ -9,12 +9,9 @@ import settings
 
 
 def flaskapi(app, f):
-    """
-    jsonifies output
-    """
     @wraps(f)
     def wrapper(*args, **kw):
-        kw.update(request.json or (request.data and json.loads(request.data)) or {})
+        kw.update(request.json or (request.data and json.loads(request.data)) or request.form)
         try:
             result = f(*args, **kw)
             return jsonify({'result': result})

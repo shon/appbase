@@ -11,6 +11,9 @@ from sqlalchemy import Table, Column, Integer, String
 import appbase.publishers
 import appbase.sa
 
+bootstrap.use_gevent()
+bootstrap.check_settings('test')
+
 satransaction = appbase.publishers.satransaction
 
 
@@ -102,6 +105,11 @@ class HTTPPublisherTestCase(unittest.TestCase):
 
     def test_iszero(self):
         resp = self.app.post('/iszero/', data=json.dumps({'n': 3}))
+        result = json.loads(resp.data)['result']
+        self.assertFalse(result)
+
+    def test_iszero_form(self):
+        resp = self.app.post('/iszero/', data={'n': 3})
         result = json.loads(resp.data)['result']
         self.assertFalse(result)
 
