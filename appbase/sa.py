@@ -1,16 +1,23 @@
 import datetime
 
 from sqlalchemy import create_engine, MetaData, Column, Integer, DateTime, BOOLEAN
-from gevent.local import local
+from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import scoped_session
 
 import settings
 
-engine = create_engine(settings.DB_URL, convert_unicode=True, echo=True)
+# configure Session class with desired options
+# later, we create the engine
+engine = create_engine(settings.DB_URL, convert_unicode=True, echo=True, pool_size=30)
+session_factory = sessionmaker(bind=engine)
+Session = scoped_session(session_factory)
+
 metadata = MetaData()
+engine.pool._use_threadlocal = True
 
 
 def connect():
-    return local.saconn
+    return Session()
 
 
 def Column_created():
@@ -26,17 +33,12 @@ def Column_active():
 
 
 def tr_start(tls):
-    conn = engine.connect()
-    trans = conn.begin()
-    tls.saconn = conn
-    tls.satrans = trans
-
+    pass
 
 def tr_complete(tls):
-    tls.satrans.commit()
-    tls.saconn.close()
+    Session.commit()
+    Session.remove()
 
 
 def tr_abort(tls):
-    tls.satrans.rollback()
-    tls.saconn.close()
+    Session.rollback()
