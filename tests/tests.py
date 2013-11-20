@@ -1,7 +1,12 @@
-import appbase.bootstrap as bootstrap
-import gevent
 import sys
 sys.path.append('.')
+
+import appbase.bootstrap as bootstrap
+bootstrap.use_gevent()
+bootstrap.green_pg()
+bootstrap.check_settings('test')
+
+import gevent
 import json
 import unittest
 
@@ -9,10 +14,7 @@ from flask import Flask
 from sqlalchemy import Table, Column, Integer, String
 
 import appbase.publishers
-import appbase.sa
-
-bootstrap.use_gevent()
-bootstrap.check_settings('test')
+import appbase.sa as sa
 
 satransaction = appbase.publishers.satransaction
 
@@ -156,24 +158,33 @@ def add(a, b):
 
 class SATransaction(unittest.TestCase):
     def setUp(self):
-        self.books = Table("books", appbase.sa.metadata,
+        self.books = Table("books", sa.metadata,
                       Column("id", Integer),
                       Column("name", String),
                       extend_existing=True
                       )
-        satransaction(appbase.sa.metadata.drop_all)(appbase.sa.engine)
-        satransaction(appbase.sa.metadata.create_all)(appbase.sa.engine)
+        satransaction(sa.metadata.drop_all)(sa.engine)
+        satransaction(sa.metadata.create_all)(sa.engine)
+
+    def test_sessions(self):
+        """
+        make sure we get different sessions per api execution
+        """
+        jobs = [gevent.spawn(sa.connect), gevent.spawn(sa.connect)]
+        gevent.joinall(jobs)  # this <^ only simulates appbase api execution
+        values = [job.value for job in jobs]
+        assert values[0] is not values[1]
 
     @satransaction
     def _test_insert(self):
-        conn = appbase.sa.connect()
+        conn = sa.connect()
         q = self.books.insert().values(name='A Book')
         conn.execute(q)
         assert((1, 'A Book') in list(conn.execute(self.books.select())))
 
     @satransaction
     def theapi(self, book_id):
-        conn = appbase.sa.connect()
+        conn = sa.connect()
         q = self.books.insert().values(id=book_id, name='Another Book')
         conn.execute(q)
         return (book_id, 'Another Book') in list(conn.execute(self.books.select()))
@@ -189,7 +200,7 @@ class SATransaction(unittest.TestCase):
         assert bool(job.value)
 
     def test_apis(self):
-        jobs = [gevent.spawn(self.theapi, i) for i in range(11, (101))]
+        jobs = [gevent.spawn(self.theapi, i) for i in range(11, (111))]
         gevent.joinall(jobs)  # this <^ only simulates appbase api execution
         assert all(job.value for job in jobs)
 
