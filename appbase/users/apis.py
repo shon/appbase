@@ -1,5 +1,6 @@
 import hashlib
 
+from blinker import signal
 from sqlalchemy.sql import select, func
 
 import settings
@@ -10,11 +11,14 @@ import appbase.users.sessions as sessionslib
 from appbase.errors import SecurityViolation
 from appbase.users.schema import users
 from appbase.helpers import gen_random_token
+from appbase.common import local_path
 
 SIGNUP_KEY_PREFIX = 'signup:'
 SIGNUP_LOOKUP_PREFIX = 'signuplookup:'
 SIGNUP_TTL = 2 * 7 * 24 * 60 * 60
 rconn = redisutils.rconn
+
+user_created = signal('user.created')
 
 
 def gen_signup_key(token):
@@ -31,6 +35,7 @@ def signupemail2token(email):
 
 
 def render_template(path, data):
+    path = local_path(path)
     tmpl = open(path).read()
     return tmpl.format(**data)
 
@@ -90,7 +95,9 @@ def create(fname, lname, email, password, groups=[], connection=None):
     q = users.insert().values(fname=fname, lname=lname, email=email, password=encpassword)
     conn.execute(q)
     q = select([users.c.id]).where(users.c.email == email)
-    return conn.execute(q).fetchone()[0]
+    uid = conn.execute(q).fetchone()[0]
+    #user_created.send(uid, fname, lname, email)
+    return uid
 
 
 def info(email):
