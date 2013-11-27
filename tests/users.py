@@ -33,7 +33,8 @@ def test_signup():
     signup = satransaction(userapis.signup)
     complete_signup = satransaction(userapis.complete_signup)
     info = satransaction(userapis.info)
-    token = signup(return_token=True, **signup_user_data)
+    signup(**signup_user_data)
+    token = userapis.signupemail2token(signup_user_data['email'])
     assert isinstance(complete_signup(token), int)
     d = info(signup_user_data['email'])
     assert d['active'] is True
@@ -68,4 +69,4 @@ def test_session_lookups():
         sid = sess['sid']
         assert sessionslib.sid2uid(sid) == uid
         sessionslib.destroy(uid)
-        assert sessionslib.sid2uid(sid) is None
+        assert sessionslib.get(uid) == {}
