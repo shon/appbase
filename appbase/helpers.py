@@ -38,7 +38,8 @@ def send_email(sender, recipient, subject, text=None, html=None, images=[]):
         msg.attach(img_part)
 
     s = smtplib.SMTP(settings.MD_HOST, settings.MD_PORT)
-    s.login(settings.MD_USERNAME, settings.MD_KEY)
+    if settings.MD_USERNAME:
+        s.login(settings.MD_USERNAME, settings.MD_KEY)
     s.sendmail(msg['From'], msg['To'], msg.as_string())
 
     s.quit()

@@ -1,5 +1,6 @@
 DEBUG = True
 
+LOCALDIR = 'tests/localdir'
 SALT = 'PLEASE_CHANGE'
 DB_NAME = 'devdb'
 DB_URL = 'postgres:///' + DB_NAME
@@ -18,3 +19,8 @@ INVITER_EMAIL = ''
 SIGNUP_SUBJECT = 'Appbase: Please cofirm signup'
 SIGNUP_SENDER = 'no-reply@example.com'
 CONFIRMATION_LINK = 'https://example.com/confirm/{TOKEN}'
+
+# Mail
+MD_HOST = '127.0.0.1'
+MD_PORT = '10000'
+MD_USERNAME = None
