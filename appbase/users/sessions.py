@@ -7,7 +7,7 @@ rev_lookup_key = 'session:uid'
 
 
 def create(uid, ttl=(30 * 24 * 60 * 60)):
-    sid = gen_sid() + str(uid)
+    sid = gen_sid() + hex(uid)[2:]
     rconn.hset(session_key(uid), 'sid', sid)
     rconn.hset(rev_lookup_key, sid, uid)
     return {'sid': sid}
@@ -18,7 +18,7 @@ def get(uid):
 
 
 def sid2uid(sid):
-    return int(sid[43:])
+    return int(sid[43:], 16)
 
 
 def get_or_create(uid):
