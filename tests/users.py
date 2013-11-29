@@ -48,25 +48,24 @@ def test_authenticate():
 
 def test_sessions():
     uid, k, v = 98765, 'foo', 'bar'
-    d = sessionslib.get_or_create(uid)
-    assert 'sid' in d
-    d = sessionslib.get_or_create(uid)
-    assert 'sid' in d
-    sessionslib.add_to_session(uid, {k: v})
-    d = sessionslib.get(uid)
+    sid = sessionslib.create(uid)
+    assert len(sid) > 43
+    sid_new = sessionslib.create(uid)
+    assert sid == sid_new
+    sessionslib.add_to_session(sid, {k: v})
+    d = sessionslib.get(sid)
     assert d[k] == v
-    sessionslib.remove_from_session(uid, k)
-    d = sessionslib.get(uid)
+    sessionslib.remove_from_session(sid, k)
+    d = sessionslib.get(sid)
     assert k not in d
-    sessionslib.destroy(uid)
-    assert sessionslib.get(uid) == {}
+    sessionslib.destroy(sid)
+    assert sessionslib.get(sid) == {}
 
 
 def test_session_lookups():
     uids = xrange(10000, 10010)
     for uid in uids:
-        sess = sessionslib.get_or_create(uid)
-        sid = sess['sid']
+        sid = sessionslib.create(uid)
         assert sessionslib.sid2uid(sid) == uid
-        sessionslib.destroy(uid)
-        assert sessionslib.get(uid) == {}
+        sessionslib.destroy(sid)
+        assert sessionslib.get(sid) == {}
