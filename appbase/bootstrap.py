@@ -21,6 +21,9 @@ def check_settings(conf):
     if os.path.exists(settings_path):
         if not os.path.islink(settings_path):
             sys.exit('Error: {settings_path} is not a link. [hint: ln -s {dev_settings_path} {settings_path}]'.format(**d))
+        else:
+            os.remove(settings_path)
+            os.symlink(d['dev_settings_path'], d['settings_path'])
     else:
         print('Warning: {settings_path} not found. [hint: ln -sf {dev_settings_path} {settings_path}]'.format(**d))
         os.symlink(d['dev_settings_path'], d['settings_path'])
