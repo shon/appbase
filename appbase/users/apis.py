@@ -89,9 +89,9 @@ def encrypt(s, salt=''):
     return h.hexdigest()
 
 
-def create(fname, lname, email, password, groups=[], connection=None):
+def create(fname, lname, email, password, groups=[], connection=None, _welcome=True, _encpassword=None):
     conn = sa.connect()
-    encpassword = encrypt(password, settings.SALT)
+    encpassword = _encpassword or encrypt(password, settings.SALT)
     q = users.insert().values(fname=fname, lname=lname, email=email, password=encpassword)
     conn.execute(q)
     q = select([users.c.id]).where(users.c.email == email)
