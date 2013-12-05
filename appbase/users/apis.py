@@ -1,3 +1,4 @@
+import datetime
 import hashlib
 
 from blinker import signal
@@ -89,10 +90,11 @@ def encrypt(s, salt=''):
     return h.hexdigest()
 
 
-def create(fname, lname, email, password, groups=[], connection=None, _welcome=True, _encpassword=None):
+def create(fname, lname, email, password, groups=[], connection=None, _welcome=True):
     conn = sa.connect()
     encpassword = _encpassword or encrypt(password, settings.SALT)
-    q = users.insert().values(fname=fname, lname=lname, email=email, password=encpassword)
+    create = datetime.datetime.now()
+    q = users.insert().values(fname=fname, lname=lname, email=email, password=encpassword, created=created)
     conn.execute(q)
     q = select([users.c.id]).where(users.c.email == email)
     uid = conn.execute(q).fetchone()[0]
@@ -153,6 +155,13 @@ def count():
     conn = sa.connect()
     q = select([func.count(users.c.id)])
     return conn.execute(q).fetchone()[0]
+
+
+def uid_by_email(email):
+    conn = sa.connect()
+    q = select([userstore.c.id]).where(userstore.c.email == email)
+    row = conn.execute(q).fetchone()
+    return row and row[0] or None
 
 
 def request_reset_password(uid):
