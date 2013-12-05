@@ -159,7 +159,7 @@ def count():
 
 def uid_by_email(email):
     conn = sa.connect()
-    q = select([userstore.c.id]).where(userstore.c.email == email)
+    q = select([users.c.id]).where(users.c.email == email)
     row = conn.execute(q).fetchone()
     return row and row[0] or None
 
