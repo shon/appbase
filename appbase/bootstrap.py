@@ -14,6 +14,11 @@ def green_pg():
     psycogreen.gevent.patch_psycopg()
 
 
+def setdefaultencoding():
+    reload(sys)
+    sys.setdefaultencoding('utf-8')
+
+
 def check_settings(conf):
     settings_path = 'settings.py'
     dev_settings_path = 'settings-available/{0}.py'.format(conf)
