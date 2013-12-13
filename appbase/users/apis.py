@@ -92,8 +92,8 @@ def encrypt(s, salt=''):
 
 def create(fname, lname, email, password, groups=[], connection=None, _welcome=True):
     conn = sa.connect()
-    encpassword = _encpassword or encrypt(password, settings.SALT)
-    create = datetime.datetime.now()
+    encpassword = encrypt(password, settings.SALT)
+    created = datetime.datetime.now()
     q = users.insert().values(fname=fname, lname=lname, email=email, password=encpassword, created=created)
     conn.execute(q)
     q = select([users.c.id]).where(users.c.email == email)
