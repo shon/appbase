@@ -6,6 +6,7 @@ from flask import abort, request, jsonify
 
 import appbase.sa
 import settings
+from appbase.errors import BaseError
 
 
 def flaskapi(app, f):
@@ -15,10 +16,13 @@ def flaskapi(app, f):
         status_code = 200
         try:
             result = f(*args, **kw)
-        except Exception as err:
-            # TODO: log
+        except BaseError as err:
             app.logger.exception('API Execution error: ')
             result = err.to_dict()
+            status_code = 500
+        except Exception as err:
+            app.logger.exception('Unhandled API Execution error: ')
+            result = {}
             status_code = 500
         resp = jsonify({'result': result})
         resp.status_code = status_code
