@@ -19,6 +19,7 @@ from .errors import EmailExistsError, InvalidEmailError
 SIGNUP_KEY_PREFIX = 'signup:'
 SIGNUP_LOOKUP_PREFIX = 'signuplookup:'
 SIGNUP_TTL = 2 * 7 * 24 * 60 * 60
+PASSWORD_RESET_TTL = 24 * 60 * 60
 rconn = redisutils.rconn
 
 user_created = signal('user.created')
@@ -156,14 +157,14 @@ def authenticate(email, password):
 
 def edit(uid, mod_data):
     conn = sa.connect()
-    editables = set('fname', 'lname', 'email', 'password')
+    editables = set(['fname', 'lname', 'email', 'password'])
     if not editables.issuperset(mod_data.keys()):
         raise SecurityViolation()
     if 'password' in mod_data:
-        mod_data['password'] = encrypt(password)
+        mod_data['password'] = encrypt(mod_data['password'])
     q = users.update().values(**mod_data).where(users.c.id == uid)
     conn.execute(q)
-    raise NotImplemented
+    return True
 
 
 def enable(uid):
@@ -190,9 +191,26 @@ def uid_by_email(email):
     row = conn.execute(q).fetchone()
     return row and row[0] or None
 
+PASSRESET_PREFIX = 'passreset:'
 
-def request_reset_password(uid):
-    raise NotImplemented
+
+
+def request_reset_password(email):
+    existing_keys = rconn.get(PASSRESET_PREFIX + email + '*')
+    if not existing_keys:
+        token = gen_random_token()
+        key = '{prefix}{email}:{token}'.format(prefix=PASSRESET_PREFIX, email=email, token=token)
+        key = existing_keys[0]
+        rconn.set(key, '')
+        rconn.expire(key, PASSWORD_RESET_TTL)
+    else:
+        key = existing_keys[0]
+        token = key.split(':')[-1]
+    reset_link = settings.PASSWORD_RESET_LINK.format(TOKEN=token)
+    data = dict(PASSWORD_RESET_LINK=reset_link, SENDER=settings.RESET_PASSWORD_SENDER)
+    html = render_template('users/templates/password_reset.html', data)
+    appbase.helpers.send_email(settings.SIGNUP_SENDER, email, 'Password reset', html=html)
+    return True
 
 
 def reset_password(token, password):
