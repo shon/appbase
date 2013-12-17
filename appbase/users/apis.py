@@ -145,6 +145,8 @@ def authenticate(email, password):
     """
     returns session if successful else returns None
     """
+    if not validate_email(email):
+        raise InvalidEmailError(email)
     conn = sa.connect()
     q = select([users.c.id, users.c.password]).where(users.c.email == email.lower())
     uid, encpassword = conn.execute(q).fetchone()

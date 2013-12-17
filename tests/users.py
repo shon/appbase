@@ -78,6 +78,18 @@ def test_authenticate():
     assert authenticate(test_user_data['email'], test_user_data['password'])
 
 
+def test_authenticate_invalid():
+    authenticate = satransaction(userapis.authenticate)
+    assert authenticate(test_user_data['email'], 'hopefully-incorrect') is None
+    invalid_email = 'invalid @ email '
+    try:
+        authenticate(invalid_email, 'meaningless-password')
+        assert False, 'must raise InvalidEmailError'
+    except InvalidEmailError as err:
+        assert invalid_email in err.msg
+        assert invalid_email == err.data['email']
+
+
 def test_sessions():
     uid, k, v = 98765, 'foo', 'bar'
     sid = sessionslib.create(uid)
