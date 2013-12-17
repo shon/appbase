@@ -12,13 +12,17 @@ def flaskapi(app, f):
     @wraps(f)
     def wrapper(*args, **kw):
         kw.update(request.json or (request.data and json.loads(request.data)) or request.form)
+        status_code = 200
         try:
             result = f(*args, **kw)
-            return jsonify({'result': result})
         except Exception as err:
             # TODO: log
             app.logger.exception('API Execution error: ')
-            abort(500)
+            result = err.to_dict()
+            status_code = 500
+        resp = jsonify({'result': result})
+        resp.status_code = status_code
+        return resp
     return wrapper
 
 

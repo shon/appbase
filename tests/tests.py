@@ -15,6 +15,7 @@ from sqlalchemy import Table, Column, Integer, String
 
 import appbase.publishers
 import appbase.sa as sa
+from appbase.errors import BaseError
 
 satransaction = appbase.publishers.satransaction
 
@@ -98,7 +99,16 @@ class HTTPPublisherTestCase(unittest.TestCase):
         # TODO: Think, should we move it to respective tests
         http_publisher.add_mapping('/add/', add, ['POST'])
         http_publisher.add_mapping('/iszero/', is_zero, ['POST'])
+        def die(msg): raise BaseError(msg=str(msg))
+        http_publisher.add_mapping('/die/', die, ['POST'])
         self.app = self.app.test_client()
+
+    def test_500_on_error(self):
+        msg = 'killme'
+        resp = self.app.post('/die/', data=json.dumps({'msg': msg}))
+        result = json.loads(resp.data)['result']
+        self.assertEqual(result['msg'], msg)
+        self.assertEqual(resp.status_code, 500)
 
     def test_add(self):
         resp = self.app.post('/add/', data=json.dumps({'a': 2, 'b': 3}))

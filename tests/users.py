@@ -1,21 +1,34 @@
+from nose.tools import raises
+
 import appbase.bootstrap as bootstrap
 
 import appbase.users.apis as userapis
 from appbase.publishers import satransaction
 import appbase.sa as sa
 import appbase.users.sessions as sessionslib
+from  appbase.users.errors import InvalidEmailError, EmailExistsError
 
 
-test_user_data = dict(fname='Peter', lname='Parker', email='pepa@example.com', password='Gwen')
+test_user_data = dict(fname='Peter', lname='Parker', password='Gwen', email='pepa@localhost.localdomain')
+test_user_data_iv = dict(fname='Peter', lname='Parker', password='Gwen', email='pepa @ localhost.localdomain')
 test_user_id = 1
-signup_user_data = dict(fname='Clark', lname='Kent', email='ckent@example.com', password='secret')
-test_user_data['email'] = 'pepa@localhost.localdomain'
-signup_user_data['email'] = 'Clark@localhost.localdomain'
+signup_user_data = dict(fname='Clark', lname='Kent', email='ckent@localhost.localdomain', password='secret')
 
 
 def setUp():
     sa.metadata.drop_all(sa.engine)
     sa.metadata.create_all(sa.engine)
+
+
+def test_create_invalid_email():
+    create = satransaction(userapis.create)
+    try:
+        create(**test_user_data_iv)
+        assert False, 'must raise InvalidEmailError'
+    except InvalidEmailError as err:
+        email = test_user_data_iv['email']
+        assert email in err.msg
+        assert email == err.data['email']
 
 
 def test_create():
@@ -27,6 +40,25 @@ def test_create():
     assert d['active'] is True
     assert d['fname'] == test_user_data['fname']
     assert count() == 1
+
+
+def test_info():
+    info = satransaction(userapis.info)
+    d = info(test_user_data['email'])
+    assert d['fname'] == test_user_data['fname']
+    d = info(test_user_data['email'].upper())
+    assert d['fname'] == test_user_data['fname']
+
+
+def test_create_duplicate():
+    create = satransaction(userapis.create)
+    try:
+        create(**test_user_data)
+        assert False, 'must raise EmailExistsError'
+    except EmailExistsError as err:
+        email = test_user_data['email']
+        assert email in err.msg
+        assert email == err.data['email']
 
 
 def test_signup():

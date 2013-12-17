@@ -1,5 +1,6 @@
 import datetime
 import hashlib
+import re
 
 from blinker import signal
 from sqlalchemy.sql import select, func
@@ -13,6 +14,7 @@ from appbase.errors import SecurityViolation
 from appbase.users.schema import users
 from appbase.helpers import gen_random_token
 from appbase.common import local_path
+from .errors import EmailExistsError, InvalidEmailError
 
 SIGNUP_KEY_PREFIX = 'signup:'
 SIGNUP_LOOKUP_PREFIX = 'signuplookup:'
@@ -21,6 +23,24 @@ rconn = redisutils.rconn
 
 user_created = signal('user.created')
 
+qtext = '[^\\x0d\\x22\\x5c\\x80-\\xff]'
+dtext = '[^\\x0d\\x5b-\\x5d\\x80-\\xff]'
+atom = '[^\\x00-\\x20\\x22\\x28\\x29\\x2c\\x2e\\x3a-\\x3c\\x3e\\x40\\x5b-\\x5d\\x7f-\\xff]+'
+quoted_pair = '\\x5c[\\x00-\\x7f]'
+domain_literal = "[\\x5b](?:%s|%s)*[\\x5d]" % (dtext, quoted_pair)
+quoted_string = "\\x22(?:%s|%s)*\\x22" % (qtext, quoted_pair)
+domain_ref = atom
+sub_domain = "(?:%s|%s)" % (domain_ref, domain_literal)
+word = "(?:%s|%s)" % (atom, quoted_string)
+domain = "%s(?:\\x2e%s)*" % (sub_domain, sub_domain)
+local_part = "%s(?:\\x2e%s)*" % (word, word)
+# Adding maximum length restrictions
+addr_spec = "(?=^.{1,256}$)(?=.{1,64}@)%s\\x40%s" % (local_part, domain)
+email_address = re.compile('^%s$' % addr_spec)
+
+
+def validate_email(email):
+    return email and email_address.match(email)
 
 def gen_signup_key(token):
     return SIGNUP_KEY_PREFIX + token
@@ -91,6 +111,11 @@ def encrypt(s, salt=''):
 
 
 def create(fname, lname, email, password, groups=[], connection=None, _welcome=True):
+    if not validate_email(email):
+        raise InvalidEmailError(email)
+    email = email.lower()
+    if uid_by_email(email):
+        raise EmailExistsError(email)
     conn = sa.connect()
     encpassword = encrypt(password, settings.SALT)
     created = datetime.datetime.now()
@@ -105,7 +130,7 @@ def create(fname, lname, email, password, groups=[], connection=None, _welcome=T
 def info(email):
     conn = sa.connect()
     _fields = [users.c.id, users.c.fname, users.c.lname, users.c.active, users.c.created]
-    q = select(_fields).where(users.c.email == email)
+    q = select(_fields).where(users.c.email == email.lower())
     res = conn.execute(q)
     return dict(zip(res.keys(), res.fetchone()))
 
@@ -121,7 +146,7 @@ def authenticate(email, password):
     returns session if successful else returns None
     """
     conn = sa.connect()
-    q = select([users.c.id, users.c.password]).where(users.c.email == email)
+    q = select([users.c.id, users.c.password]).where(users.c.email == email.lower())
     uid, encpassword = conn.execute(q).fetchone()
     if encpassword == encrypt(password, settings.SALT):
         return sessionslib.create(uid)
@@ -159,7 +184,7 @@ def count():
 
 def uid_by_email(email):
     conn = sa.connect()
-    q = select([users.c.id]).where(users.c.email == email)
+    q = select([users.c.id]).where(users.c.email == email.lower())
     row = conn.execute(q).fetchone()
     return row and row[0] or None
 
