@@ -161,7 +161,7 @@ def edit(uid, mod_data):
     if not editables.issuperset(mod_data.keys()):
         raise SecurityViolation()
     if 'password' in mod_data:
-        mod_data['password'] = encrypt(mod_data['password'])
+        mod_data['password'] = encrypt(mod_data['password'], settings.SALT)
     q = users.update().values(**mod_data).where(users.c.id == uid)
     conn.execute(q)
     return True
