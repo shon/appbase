@@ -14,7 +14,7 @@ from appbase.errors import SecurityViolation
 from appbase.users.schema import users
 from appbase.helpers import gen_random_token
 from appbase.common import local_path
-from .errors import EmailExistsError, InvalidEmailError
+from .errors import EmailExistsError, InvalidEmailError, EmailiDoesNotExistError
 
 SIGNUP_KEY_PREFIX = 'signup:'
 SIGNUP_LOOKUP_PREFIX = 'signuplookup:'
@@ -150,6 +150,9 @@ def authenticate(email, password):
         raise InvalidEmailError(email)
     conn = sa.connect()
     q = select([users.c.id, users.c.password]).where(users.c.email == email.lower())
+    row = conn.execute(q).fetchone()
+    if not row:
+        raise EmailiDoesNotExistError(email)
     uid, encpassword = conn.execute(q).fetchone()
     if encpassword == encrypt(password, settings.SALT):
         return sessionslib.create(uid)
