@@ -9,17 +9,17 @@ class EmailExistsError(BaseError):
 
 class EmailiDoesNotExistError(BaseError):
     def __init__(self, email):
-        self.msg = 'No account with email "{email}" exists'.format(email=email)
+        self.msg = 'Invalid email address. Please try again.'
         self.data = {'email': email}
 
 
 class InvalidEmailError(BaseError):
     def __init__(self, email):
-        self.msg = 'Invalid email: {email}'.format(email=email)
+        self.msg = 'Invalid email address. Please try again.'
         self.data = {'email': email}
 
 
 class AuthError(BaseError):
     def __init__(self, email):
-        self.msg = 'Authentication failed'
+        self.msg = 'Incorrect password. Please try again.'
         self.data = {'email': email}
