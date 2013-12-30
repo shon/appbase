@@ -6,11 +6,12 @@ import appbase.users.apis as userapis
 from appbase.publishers import satransaction
 import appbase.sa as sa
 import appbase.users.sessions as sessionslib
-from  appbase.users.errors import InvalidEmailError, EmailExistsError
+from  appbase.users.errors import InvalidEmailError, EmailExistsError, PasswordTooSmallError
 
 
-test_user_data = dict(fname='Peter', lname='Parker', password='Gwen', email='pepa@localhost.localdomain')
-test_user_data_iv = dict(fname='Peter', lname='Parker', password='Gwen', email='pepa @ localhost.localdomain')
+test_user_data = dict(fname='Peter', lname='Parker', password='Gwen7', email='pepa@localhost.localdomain')
+test_user_data_iv = dict(fname='Peter', lname='Parker', password='Gwen7', email='pepa @ localhost.localdomain')
+test_user_data_sp = dict(fname='Peter', lname='Parker', password='Gwen', email='pepa @ localhost.localdomain')
 test_user_id = 1
 signup_user_data = dict(fname='Clark', lname='Kent', email='ckent@localhost.localdomain', password='secret')
 
@@ -27,8 +28,16 @@ def test_create_invalid_email():
         assert False, 'must raise InvalidEmailError'
     except InvalidEmailError as err:
         email = test_user_data_iv['email']
-        assert email in err.msg
         assert email == err.data['email']
+
+
+def test_create_small_password():
+    create = satransaction(userapis.create)
+    try:
+        create(**test_user_data_sp)
+        assert False, 'must raise PasswordTooSmallError'
+    except PasswordTooSmallError as err:
+        assert 'characters' in err.msg
 
 
 def test_create():
@@ -57,7 +66,6 @@ def test_create_duplicate():
         assert False, 'must raise EmailExistsError'
     except EmailExistsError as err:
         email = test_user_data['email']
-        assert email in err.msg
         assert email == err.data['email']
 
 
@@ -86,7 +94,6 @@ def test_authenticate_invalid():
         authenticate(invalid_email, 'meaningless-password')
         assert False, 'must raise InvalidEmailError'
     except InvalidEmailError as err:
-        assert invalid_email in err.msg
         assert invalid_email == err.data['email']
 
 
