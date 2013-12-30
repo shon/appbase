@@ -1,3 +1,4 @@
+jsonschema
 gevent
 sqlalchemy
 psycopg2
