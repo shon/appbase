@@ -2,6 +2,9 @@ import os
 import logging
 from logging.handlers import RotatingFileHandler
 import sys
+from os.path import abspath
+
+from .common import local_path
 
 
 def use_gevent():
@@ -20,8 +23,8 @@ def setdefaultencoding():
 
 
 def check_settings(conf):
-    settings_path = 'settings.py'
-    dev_settings_path = 'settings-available/{0}.py'.format(conf)
+    settings_path = local_path('settings.py')
+    dev_settings_path = local_path('settings-available/{0}.py'.format(conf))
     d = dict(dev_settings_path=dev_settings_path, settings_path=settings_path)
     if os.path.exists(settings_path):
         if not os.path.islink(settings_path):
@@ -36,7 +39,7 @@ def check_settings(conf):
 
 
 def configure_logging(logger, name, debug=True):
-    logdir = 'logs'
+    logdir = abspath(local_path('logs'))
     if not os.path.exists(logdir):
         os.mkdir(logdir)
     logpath = os.path.join(logdir, name)
