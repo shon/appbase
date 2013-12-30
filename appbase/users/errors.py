@@ -23,3 +23,8 @@ class AuthError(BaseError):
     def __init__(self, email):
         self.msg = 'Incorrect password. Please try again.'
         self.data = {'email': email}
+
+
+class PasswordTooSmallError(BaseError):
+    def __init__(self):
+        self.msg = 'Passwords must contain at least 5 characters.'

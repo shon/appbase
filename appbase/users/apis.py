@@ -14,7 +14,7 @@ from appbase.errors import SecurityViolation
 from appbase.users.schema import users
 from appbase.helpers import gen_random_token
 from appbase.common import local_path
-from .errors import EmailExistsError, InvalidEmailError, EmailiDoesNotExistError
+from .errors import EmailExistsError, InvalidEmailError, EmailiDoesNotExistError, PasswordTooSmallError
 
 SIGNUP_KEY_PREFIX = 'signup:'
 SIGNUP_LOOKUP_PREFIX = 'signuplookup:'
@@ -111,7 +111,26 @@ def encrypt(s, salt=''):
     return h.hexdigest()
 
 
+# Placeholder code: should be replaced with proper validation decorator
+
+password_schema = {'type': 'string', 'minLength': 5}
+user_schema = {'type': 'object',
+               'properties': {
+                   'password': password_schema }
+               }
+
+from jsonschema import Draft4Validator
+
+def validate_password(password):
+    v = Draft4Validator(password_schema)
+    e = list(v.iter_errors(password))
+    if e and e[0].message.endswith('is too short'):
+        raise PasswordTooSmallError()
+
+# /Placeholder code
+
 def create(fname, lname, email, password, groups=[], connection=None, _welcome=True):
+    validate_password(password)
     if not validate_email(email):
         raise InvalidEmailError(email)
     email = email.lower()
@@ -134,12 +153,6 @@ def info(email):
     q = select(_fields).where(users.c.email == email.lower())
     res = conn.execute(q)
     return dict(zip(res.keys(), res.fetchone()))
-
-
-def list():
-    conn = sa.connect()
-    q = users.select()
-    return conn.execute(q).fetch_all()
 
 
 def authenticate(email, password):
@@ -234,3 +247,9 @@ def bulkcreate():
 
 def import_data():
     raise NotImplemented
+
+
+def list_():
+    conn = sa.connect()
+    q = users.select()
+    return conn.execute(q).fetch_all()
