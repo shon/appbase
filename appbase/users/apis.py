@@ -195,12 +195,6 @@ def disable(uid):
     conn.execute(q)
 
 
-def count():
-    conn = sa.connect()
-    q = select([func.count(users.c.id)])
-    return conn.execute(q).fetchone()[0]
-
-
 def uid_by_email(email):
     conn = sa.connect()
     q = select([users.c.id]).where(users.c.email == email.lower())

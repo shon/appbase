@@ -3,6 +3,7 @@ from nose.tools import raises
 import appbase.bootstrap as bootstrap
 
 import appbase.users.apis as userapis
+import appbase.users.stats as stats
 from appbase.publishers import satransaction
 import appbase.sa as sa
 import appbase.users.sessions as sessionslib
@@ -42,7 +43,7 @@ def test_create_small_password():
 
 def test_create():
     create = satransaction(userapis.create)
-    count = satransaction(userapis.count)
+    count = satransaction(stats.count)
     info = satransaction(userapis.info)
     assert create(**test_user_data) == 1
     d = info(test_user_data['email'])
