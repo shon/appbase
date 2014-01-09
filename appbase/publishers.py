@@ -24,6 +24,7 @@ def flaskapi(app, f):
             app.logger.exception('Unhandled API Execution error: ')
             result = {}
             status_code = 500
+            app.logger.error('parameters: %s', str(kw))
         resp = jsonify({'result': result})
         resp.status_code = status_code
         return resp
