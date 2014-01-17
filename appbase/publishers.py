@@ -27,6 +27,7 @@ def flaskapi(app, f):
             app.logger.error('parameters: %s', str(kw))
         resp = jsonify({'result': result})
         resp.status_code = status_code
+        resp.headers['Access-Control-Allow-Origin'] = '*'
         return resp
     return wrapper
 
