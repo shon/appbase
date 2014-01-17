@@ -1,3 +1,5 @@
+import datetime
+
 from sqlalchemy.sql import select, func
 
 import appbase.sa as sa
@@ -16,3 +18,10 @@ def groupby_created(precision='month'):
     q = select([month, func.count(users.c.id)]).group_by('month').order_by('month')
     #return conn.execute(q).fetchall()
     return [(dt.strftime('%b %Y'), num) for (dt, num) in conn.execute(q).fetchall()]
+
+
+def created_today():
+    conn = sa.connect()
+    today = datetime.date.today()
+    q = select([func.count(users.c.id)]).where(users.c.created > today)
+    return conn.execute(q).fetchone()[0]
