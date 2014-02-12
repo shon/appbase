@@ -1,5 +1,6 @@
 import datetime
 import hashlib
+import os.path
 import re
 
 from blinker import signal
@@ -43,6 +44,7 @@ email_address = re.compile('^%s$' % addr_spec)
 def validate_email(email):
     return email and email_address.match(email)
 
+
 def gen_signup_key(token):
     return SIGNUP_KEY_PREFIX + token
 
@@ -63,25 +65,34 @@ def render_template(path, data):
 
 
 def welcome(email, data={}):
-    text = render_template('users/templates/welcome.txt', data)
+    template_path = 'users/templates/welcome.txt'
+    if not os.path.exists(local_path(template_path)):
+        return
+    text = render_template(template_path, data)
     #html = render_template('users/templates/invite.html', data)
     #images = [('signature', open('users/templates/logo.png').read())]
     sender = settings.WELCOME_SENDER
     recipient = email
     subject = settings.WELCOME_SUBJECT
-    appbase.helpers.send_email(sender, recipient, subject, text)
+    appbase.helpers.send_email(sender, recipient, subject, text=text)
     return True
 
 
 def invite(name, email):
-    data = dict(NAME=name, INVITER_NAME=settings.INVITER_NAME, INVITE_LINK=settings.INVITE_LINK)
+    data = dict(NAME=name, INVITER_NAME=settings.INVITER_NAME, INVITE_LINK=settings.INVITE_LINK, INVITER_EMAIL=settings.INVITER_EMAIL)
     html = render_template('users/templates/invite.html', data)
-    sender = '{INVITER_NAME} <{INVITER_EMAIL}>'.format(INVITER_NAME=INVITER_NAME, INVITER_EMAIL=INVITER_EMAIL)
+    sender = '{INVITER_NAME} <{INVITER_EMAIL}>'.format(**data)
     appbase.helpers.send_email(sender, recipient, subject, html=html)
     return True
 
 
 def signup(fname, lname, email, password):
+    validate_password(password)
+    if not validate_email(email):
+        raise InvalidEmailError(email)
+    email = email.lower()
+    if uid_by_email(email):
+        raise EmailExistsError(email)
     lookup_key = gen_signuploopkup_key(email)
     token = rconn.get(lookup_key)
     if not token:
@@ -102,7 +113,8 @@ def signup(fname, lname, email, password):
 def complete_signup(token):
     key = gen_signup_key(token)
     data = rconn.hgetall(key)
-    return create(**data)
+    uid = create(**data)
+    return sessionslib.create(uid)
 
 
 def encrypt(s, salt=''):
@@ -129,7 +141,7 @@ def validate_password(password):
 
 # /Placeholder code
 
-def create(fname, lname, email, password, groups=[], connection=None, _welcome=True):
+def create(fname, lname, email, password, groups=[], connection=None):
     validate_password(password)
     if not validate_email(email):
         raise InvalidEmailError(email)
@@ -144,6 +156,7 @@ def create(fname, lname, email, password, groups=[], connection=None, _welcome=T
     q = select([users.c.id]).where(users.c.email == email)
     uid = conn.execute(q).fetchone()[0]
     #user_created.send(uid, fname, lname, email)
+    welcome(email)
     return uid
 
 
@@ -204,7 +217,6 @@ def uid_by_email(email):
 PASSRESET_PREFIX = 'passreset:'
 
 
-
 def request_reset_password(email):
     existing_keys = rconn.get(PASSRESET_PREFIX + email + '*')
     if not existing_keys:
@@ -246,4 +258,4 @@ def import_data():
 def list_():
     conn = sa.connect()
     q = users.select()
-    return conn.execute(q).fetch_all()
+    return conn.execute(q).fetchall()

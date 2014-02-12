@@ -76,8 +76,10 @@ def test_signup():
     info = satransaction(userapis.info)
     signup(**signup_user_data)
     token = userapis.signupemail2token(signup_user_data['email'])
-    assert isinstance(complete_signup(token), int)
+    sid = complete_signup(token)
+    uid = sessionslib.sid2uid(sid)
     d = info(signup_user_data['email'])
+    assert d['id'] == uid
     assert d['active'] is True
     assert d['fname'] == signup_user_data['fname']
 
