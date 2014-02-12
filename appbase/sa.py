@@ -8,7 +8,7 @@ import settings
 
 # configure Session class with desired options
 # later, we create the engine
-engine = create_engine(settings.DB_URL, convert_unicode=True, echo=True, pool_size=30)
+engine = create_engine(settings.DB_URL, convert_unicode=True, echo=settings.DEBUG, pool_size=30)
 session_factory = sessionmaker(bind=engine)
 Session = scoped_session(session_factory)
 
