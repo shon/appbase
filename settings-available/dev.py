@@ -11,6 +11,7 @@ REDIS_PORT = 6379
 REDIS_SESSIONS_DB = 1
 
 # users
+SEND_WELCOME_EMAIL = False
 WELCOME_SENDER = 'Welcome <welcome@example.com>'
 WELCOME_SUBJECT = 'Welcome to Appbase'
 INVITER_NAME = ''

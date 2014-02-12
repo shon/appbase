@@ -156,7 +156,8 @@ def create(fname, lname, email, password, groups=[], connection=None):
     q = select([users.c.id]).where(users.c.email == email)
     uid = conn.execute(q).fetchone()[0]
     #user_created.send(uid, fname, lname, email)
-    welcome(email)
+    if settings.SEND_WELCOME_EMAIL:
+        welcome(email)
     return uid
 
 
