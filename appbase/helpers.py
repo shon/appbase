@@ -18,7 +18,6 @@ def send_email(sender, recipient, subject, text=None, html=None, images=[]):
     html: html message
     images: list of cid and image paths. eg. [('logo', 'images/logo.png'), ('Bruce', 'images/bat.png')]
     """
-    return
     assert any((text, html)), 'please provide html or text'
 
     if html and not text:
@@ -41,7 +40,7 @@ def send_email(sender, recipient, subject, text=None, html=None, images=[]):
     s = smtplib.SMTP(settings.MD_HOST, settings.MD_PORT)
     if settings.MD_USERNAME:
         s.login(settings.MD_USERNAME, settings.MD_KEY)
-    s.set_debuglevel(1)
+    #s.set_debuglevel(1)
     s.sendmail(msg['From'], msg['To'], msg.as_string())
 
     s.quit()
