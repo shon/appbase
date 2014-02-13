@@ -120,7 +120,7 @@ class HTTPPublisher(object):
     def __init__(self, flask_app):
         self.app = flask_app
 
-    def add_mapping(self, url, handler, methods):
+    def add_mapping(self, url, handler, methods=['GET']):
         """
         Add a mapping for a callable.
         """
