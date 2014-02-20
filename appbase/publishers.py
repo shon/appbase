@@ -9,25 +9,34 @@ import settings
 from appbase.errors import BaseError
 
 
+def add_cors_headers(resp):
+    resp.headers['Access-Control-Allow-Origin'] = '*'
+    resp.headers['Access-Control-Max-Age'] = '1728000'
+    resp.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, OPTIONS, PATCH'
+
+
 def flaskapi(app, f):
     @wraps(f)
     def wrapper(*args, **kw):
-        kw.update(request.json or (request.data and json.loads(request.data)) or request.form)
         status_code = 200
-        try:
-            result = f(*args, **kw)
-        except BaseError as err:
-            app.logger.exception('API Execution error: ')
-            result = err.to_dict()
-            status_code = 500
-        except Exception as err:
-            app.logger.exception('Unhandled API Execution error: ')
-            result = {}
-            status_code = 500
-            app.logger.error('parameters: %s', str(kw))
-        resp = jsonify({'result': result})
+        if request.method == 'OPTIONS':
+            resp = app.make_default_options_response()
+        else:
+            kw.update(request.json or (request.data and json.loads(request.data)) or request.form)
+            try:
+                result = f(*args, **kw)
+            except BaseError as err:
+                app.logger.exception('API Execution error: ')
+                result = err.to_dict()
+                status_code = 500
+            except Exception as err:
+                app.logger.exception('Unhandled API Execution error: ')
+                result = {}
+                status_code = 500
+                app.logger.error('parameters: %s', str(kw))
+            resp = jsonify({'result': result})
         resp.status_code = status_code
-        resp.headers['Access-Control-Allow-Origin'] = '*'
+        add_cors_headers(resp)
         return resp
     return wrapper
 
@@ -51,6 +60,7 @@ def satransaction(f):
 def add_url_rule(app, url, handler, methods):
     # add debugging, inspection here
     print('%s -> %s [%s]' % (url, handler, str(methods)))
+    methods.append('OPTIONS')
     app.add_url_rule(url, None, flaskapi(app, satransaction(handler)), methods=methods)
 
 
