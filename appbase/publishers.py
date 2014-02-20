@@ -13,6 +13,7 @@ def add_cors_headers(resp):
     resp.headers['Access-Control-Allow-Origin'] = '*'
     resp.headers['Access-Control-Max-Age'] = '1728000'
     resp.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, OPTIONS, PATCH'
+    resp.headers['Access-Control-Allow-Headers'] = request.headers.get('Access-Control-Request-Headers', '')
 
 
 def flaskapi(app, f):
