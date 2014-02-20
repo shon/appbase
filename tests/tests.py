@@ -125,6 +125,12 @@ class HTTPPublisherTestCase(unittest.TestCase):
         result = json.loads(resp.data)['result']
         self.assertFalse(result)
 
+    def test_cors(self):
+        resp = self.app.options('/iszero/', data={'n': 3})
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.headers['access-control-allow-headers'], '')
+        self.assertEqual(resp.headers['access-control-allow-origin'], '*')
+
 
 # The User Resource
 users = []
