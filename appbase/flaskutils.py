@@ -20,7 +20,6 @@ def crossdomain(origin=None, methods=None, headers=None,
     def get_methods():
         if methods is not None:
             return methods
-        return 'GET, POST, PUT, OPTIONS, PATCH'
 
         options_resp = current_app.make_default_options_response()
         return options_resp.headers['allow']
