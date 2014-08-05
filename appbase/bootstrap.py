@@ -38,13 +38,16 @@ def check_settings(conf):
     print('Using {dev_settings_path}'.format(**d))
 
 
-def configure_logging(logger, name, debug=True):
+def configure_logging(logfile, debug=True):
+    level = logging.DEBUG if debug else logging.INFO
     logdir = abspath(local_path('logs'))
     if not os.path.exists(logdir):
         os.mkdir(logdir)
-    logpath = os.path.join(logdir, name)
+    logpath = os.path.join(logdir, logfile)
     file_handler = RotatingFileHandler(logpath, maxBytes=1024 * 1024 * 10, backupCount=100)
-    file_handler.setLevel(logging.DEBUG if debug else logging.INFO)
+    file_handler.setLevel(level)
     formatter = logging.Formatter('[%(levelname)s] %(asctime)s: %(message)s')
     file_handler.setFormatter(formatter)
+    logger = logging.getLogger()
     logger.addHandler(file_handler)
+    logger.setLevel(level)
