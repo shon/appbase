@@ -6,7 +6,8 @@ from flask import abort, request, jsonify
 
 import appbase.sa
 import settings
-from appbase.errors import BaseError
+from appbase.errors import BaseError, AccessDenied
+import appbase.users.sessions as sessionlib
 
 
 def add_cors_headers(resp):
@@ -26,6 +27,10 @@ def flaskapi(app, f):
             kw.update(request.json or (request.data and json.loads(request.data)) or request.form)
             try:
                 result = f(*args, **kw)
+            except AccessDenied as err:
+                result = err.to_dict()
+                status_code = 403
+                app.logger.exception('Access Denied error: ' + str(result))
             except BaseError as err:
                 app.logger.exception('API Execution error: ')
                 result = err.to_dict()
@@ -58,11 +63,26 @@ def satransaction(f):
     return wrapper
 
 
+def protected(f):
+    roles_required = getattr(f, 'roles_required', None)
+    if not roles_required: return f
+    @wraps(f)
+    def wrapper(*args, **kw):
+        session_id = request.cookies.get('session_id')
+        if not session_id:
+            raise AccessDenied(msg='session not found', data={'cookies': request.cookies})
+        _uid, groups = sessionlib.sid2uidgroups(session_id)
+        if not set(groups).intersection(roles_required):
+            raise AccessDenied(data=dict(groups=groups, roles_required=roles_required))
+        return f(*args, **kw)
+    return wrapper
+
+
 def add_url_rule(app, url, handler, methods):
     # add debugging, inspection here
     print('%s -> %s [%s]' % (url, handler, str(methods)))
     methods.append('OPTIONS')
-    app.add_url_rule(url, None, flaskapi(app, satransaction(handler)), methods=methods)
+    app.add_url_rule(url, None, flaskapi(app, protected(satransaction(handler))), methods=methods)
 
 
 class RESTPublisher(object):
