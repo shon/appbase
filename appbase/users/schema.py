@@ -1,6 +1,7 @@
 from sqlalchemy import Table, Column, Integer, String, DateTime, ForeignKey
+from sqlalchemy.dialects.postgresql import ARRAY
 
-from appbase.sa import metadata, engine, Column_created, Column_id, Column_active
+from appbase.sa import metadata, engine, Column_created, Column_id, Column_active, Column_pk_name
 
 
 users = Table('users', metadata,
@@ -9,6 +10,7 @@ users = Table('users', metadata,
               Column('password', String),
               Column_created(),
               Column_active(),
+              Column('groups', ARRAY(String), default=[]),
               Column('fname', String, nullable=False),
               Column('lname', String)
               )
@@ -21,6 +23,13 @@ plans = Table('plans', metadata,
               Column('description', String),
               )
 
+groups = Table('groups', metadata,
+              Column_created(),
+              Column_active(),
+              Column_pk_name(),
+              Column('description', String),
+              )
+
 subscriptions = Table('subscriptions', metadata,
                       Column_id(),
                       Column('user_id', None, ForeignKey('users.id')),
@@ -30,5 +39,12 @@ subscriptions = Table('subscriptions', metadata,
                       Column('start_time', DateTime),
                       Column('end_time', DateTime),
                       )
+
+group_users = Table('group_users', metadata,
+                    Column_id(),
+                    Column('user_id', None, ForeignKey('users.id')),
+                    Column('group_name', String, nullable=False),
+                    Column_created(),
+                    )
 
 metadata.create_all(engine)

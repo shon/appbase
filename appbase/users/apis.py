@@ -4,7 +4,7 @@ import os.path
 import re
 
 from blinker import signal
-from sqlalchemy.sql import select, func
+from sqlalchemy.sql import select
 
 import settings
 import appbase.helpers
@@ -12,7 +12,7 @@ import appbase.sa as sa
 import appbase.redisutils as redisutils
 import appbase.users.sessions as sessionslib
 from appbase.errors import SecurityViolation
-from appbase.users.schema import users
+from appbase.users.schema import users, group_users
 from appbase.helpers import gen_random_token
 from appbase.common import local_path
 from .errors import EmailExistsError, InvalidEmailError, EmailiDoesNotExistError, PasswordTooSmallError
@@ -82,7 +82,7 @@ def invite(name, email):
     data = dict(NAME=name, INVITER_NAME=settings.INVITER_NAME, INVITE_LINK=settings.INVITE_LINK, INVITER_EMAIL=settings.INVITER_EMAIL)
     html = render_template('users/templates/invite.html', data)
     sender = '{INVITER_NAME} <{INVITER_EMAIL}>'.format(**data)
-    appbase.helpers.send_email(sender, recipient, subject, html=html)
+    appbase.helpers.send_email(sender, email, settings.INVITE_SUBJECT, html=html)
     return True
 
 
@@ -114,7 +114,8 @@ def complete_signup(token):
     key = gen_signup_key(token)
     data = rconn.hgetall(key)
     uid = create(**data)
-    return sessionslib.create(uid)
+    user = info(uid=uid)
+    return sessionslib.create(uid, user['groups'])
 
 
 def encrypt(s, salt=''):
@@ -151,20 +152,25 @@ def create(fname, lname, email, password, groups=[], connection=None):
     conn = sa.connect()
     encpassword = encrypt(password, settings.SALT)
     created = datetime.datetime.now()
-    q = users.insert().values(fname=fname, lname=lname, email=email, password=encpassword, created=created)
+    q = users.insert().values(fname=fname, lname=lname, email=email, password=encpassword, created=created, groups=groups)
     conn.execute(q)
     q = select([users.c.id]).where(users.c.email == email)
     uid = conn.execute(q).fetchone()[0]
+    if groups:
+        conn.execute(group_users.insert(), [{'user_id': uid, 'group_name': name} for name in groups])
     #user_created.send(uid, fname, lname, email)
     if settings.SEND_WELCOME_EMAIL:
         welcome(email)
     return uid
 
 
-def info(email):
+def info(email=None, uid=None):
     conn = sa.connect()
-    _fields = [users.c.id, users.c.fname, users.c.lname, users.c.active, users.c.created]
-    q = select(_fields).where(users.c.email == email.lower())
+    _fields = [users.c.id, users.c.fname, users.c.lname, users.c.active, users.c.created, users.c.groups]
+    if email:
+        q = select(_fields).where(users.c.email == email.lower())
+    else:
+        q = select(_fields).where(users.c.id == uid)
     res = conn.execute(q)
     return dict(zip(res.keys(), res.fetchone()))
 
@@ -176,13 +182,13 @@ def authenticate(email, password):
     if not validate_email(email):
         raise InvalidEmailError(email)
     conn = sa.connect()
-    q = select([users.c.id, users.c.password]).where(users.c.email == email.lower())
+    q = select([users.c.id, users.c.password, users.c.groups]).where(users.c.email == email.lower())
     row = conn.execute(q).fetchone()
     if not row:
         raise EmailiDoesNotExistError(email)
-    uid, encpassword = conn.execute(q).fetchone()
+    uid, encpassword, groups = conn.execute(q).fetchone()
     if encpassword == encrypt(password, settings.SALT):
-        return sessionslib.create(uid)
+        return sessionslib.create(uid, groups)
 
 
 def edit(uid, mod_data):

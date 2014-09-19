@@ -1,16 +1,18 @@
 import appbase.redisutils as redisutils
 from appbase.helpers import gen_random_token as gen_sid
+from base64 import b64encode, b64decode
 
 rconn = redisutils.rconn
 session_key = lambda sid: 'session:' + sid
 rev_lookup_key = 'uid:sid'
 
 
-def create(uid, ttl=(30 * 24 * 60 * 60)):
+def create(uid, groups, ttl=(30 * 24 * 60 * 60)):
     sid = rconn.hget(rev_lookup_key, uid)
     if sid:
         return sid
-    sid = gen_sid() + hex(uid)[2:]
+    uidgroups = str(uid) + ':' + (':'.join(groups) if groups else '')
+    sid = gen_sid() + b64encode(uidgroups)
     rconn.hset(session_key(sid), 'sid', sid)
     rconn.hset(rev_lookup_key, uid, sid)
     return sid
@@ -25,8 +27,14 @@ def get_for(uid):
     return get(sid)
 
 
-def sid2uid(sid):
-    return int(sid[43:], 16)
+def sid2uidgroups(sid):
+    """
+    => uid (int), groups (list)
+    """
+    uidgroups_list = b64decode(sid[43:]).split(':')
+    uid = int(uidgroups_list[0])
+    groups = uidgroups_list[1:]
+    return uid, groups
 
 
 def add_to_session(sid, keyvalues):
@@ -42,8 +50,15 @@ def remove_from_session(sid, keys):
 
 
 def destroy(sid):
-    uid = sid2uid(sid)
+    uid = sid2uidgroups(sid)[0]
     sk = session_key(sid)
     rconn.delete(sk)
-    rconn.hdel(rev_lookup_key, sid)
+    rconn.hdel(rev_lookup_key, uid)
     return True
+
+
+def destroy_all():
+    keys = rconn.keys(session_key('*'))
+    rconn.delete(keys)
+    keys = rconn.keys(rev_lookup_key + '*')
+    rconn.delete(keys)

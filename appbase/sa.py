@@ -1,6 +1,6 @@
 import datetime
 
-from sqlalchemy import create_engine, MetaData, Column, Integer, DateTime, BOOLEAN
+from sqlalchemy import create_engine, MetaData, Column, Integer, DateTime, BOOLEAN, String
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.orm import scoped_session
 
@@ -26,6 +26,10 @@ def Column_created():
 
 def Column_id():
     return Column('id', Integer, primary_key=True)
+
+
+def Column_pk_name():
+    return Column('name', String, primary_key=True)
 
 
 def Column_active():

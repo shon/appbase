@@ -1,6 +1,7 @@
 from nose.tools import raises
 
 import appbase.bootstrap as bootstrap
+import appbase.redisutils as redisutils
 
 import appbase.users.apis as userapis
 import appbase.users.stats as stats
@@ -11,19 +12,33 @@ from  appbase.users.errors import InvalidEmailError, EmailExistsError, PasswordT
 
 
 test_user_data = dict(fname='Peter', lname='Parker', password='Gwen7', email='pepa@localhost.localdomain')
+test_user_data_grp = dict(fname='Peter', lname='Parker', password='Gwen7', email='pepa2@localhost.localdomain', groups=['admin', 'member'])
 test_user_data_iv = dict(fname='Peter', lname='Parker', password='Gwen7', email='pepa @ localhost.localdomain')
 test_user_data_sp = dict(fname='Peter', lname='Parker', password='Gwen', email='pepa @ localhost.localdomain')
 test_user_id = 1
 signup_user_data = dict(fname='Clark', lname='Kent', email='ckent@localhost.localdomain', password='secret')
 
 
-def setUp():
-    sa.metadata.drop_all(sa.engine)
+create = satransaction(userapis.create)
+count = satransaction(stats.count)
+info = satransaction(userapis.info)
+signup = satransaction(userapis.signup)
+complete_signup = satransaction(userapis.complete_signup)
+authenticate = satransaction(userapis.authenticate)
+
+rconn = redisutils.rconn
+
+
+def setUpModule():
     sa.metadata.create_all(sa.engine)
 
 
+def tearDownModule():
+    sa.metadata.drop_all(sa.engine)
+    rconn.flushall()
+
+
 def test_create_invalid_email():
-    create = satransaction(userapis.create)
     try:
         create(**test_user_data_iv)
         assert False, 'must raise InvalidEmailError'
@@ -33,7 +48,6 @@ def test_create_invalid_email():
 
 
 def test_create_small_password():
-    create = satransaction(userapis.create)
     try:
         create(**test_user_data_sp)
         assert False, 'must raise PasswordTooSmallError'
@@ -42,18 +56,25 @@ def test_create_small_password():
 
 
 def test_create():
-    create = satransaction(userapis.create)
-    count = satransaction(stats.count)
-    info = satransaction(userapis.info)
-    assert create(**test_user_data) == 1
+    last_count = count()
+    assert isinstance(create(**test_user_data), int)
     d = info(test_user_data['email'])
     assert d['active'] is True
     assert d['fname'] == test_user_data['fname']
-    assert count() == 1
+    assert (count() - last_count) == 1
+
+
+def test_create_w_groups():
+    last_count = count()
+    assert isinstance(create(**test_user_data_grp), int)
+    d = info(test_user_data_grp['email'])
+    assert d['groups'] == test_user_data_grp['groups']
+    assert d['active'] is True
+    assert d['fname'] == test_user_data_grp['fname']
+    assert (count() - last_count) == 1
 
 
 def test_info():
-    info = satransaction(userapis.info)
     d = info(test_user_data['email'])
     assert d['fname'] == test_user_data['fname']
     d = info(test_user_data['email'].upper())
@@ -61,7 +82,6 @@ def test_info():
 
 
 def test_create_duplicate():
-    create = satransaction(userapis.create)
     try:
         create(**test_user_data)
         assert False, 'must raise EmailExistsError'
@@ -71,26 +91,22 @@ def test_create_duplicate():
 
 
 def test_signup():
-    signup = satransaction(userapis.signup)
-    complete_signup = satransaction(userapis.complete_signup)
-    info = satransaction(userapis.info)
     signup(**signup_user_data)
     token = userapis.signupemail2token(signup_user_data['email'])
     sid = complete_signup(token)
-    uid = sessionslib.sid2uid(sid)
+    uid, groups = sessionslib.sid2uidgroups(sid)
     d = info(signup_user_data['email'])
     assert d['id'] == uid
+    assert d['groups'] == groups
     assert d['active'] is True
     assert d['fname'] == signup_user_data['fname']
 
 
 def test_authenticate():
-    authenticate = satransaction(userapis.authenticate)
     assert authenticate(test_user_data['email'], test_user_data['password'])
 
 
 def test_authenticate_invalid():
-    authenticate = satransaction(userapis.authenticate)
     assert authenticate(test_user_data['email'], 'hopefully-incorrect') is None
     invalid_email = 'invalid @ email '
     try:
@@ -101,10 +117,10 @@ def test_authenticate_invalid():
 
 
 def test_sessions():
-    uid, k, v = 98765, 'foo', 'bar'
-    sid = sessionslib.create(uid)
+    uid, groups, k, v = 98765, ['admin', 'member'], 'foo', 'bar'
+    sid = sessionslib.create(uid, groups)
     assert len(sid) > 43
-    sid_new = sessionslib.create(uid)
+    sid_new = sessionslib.create(uid, groups)
     assert sid == sid_new
     sessionslib.add_to_session(sid, {k: v})
     d = sessionslib.get(sid)
@@ -118,8 +134,9 @@ def test_sessions():
 
 def test_session_lookups():
     uids = xrange(10000, 10010)
+    groups = ['grp1', 'grp2']
     for uid in uids:
-        sid = sessionslib.create(uid)
-        assert sessionslib.sid2uid(sid) == uid
+        sid = sessionslib.create(uid, groups)
+        assert sessionslib.sid2uidgroups(sid) == uid, groups
         sessionslib.destroy(sid)
         assert sessionslib.get(sid) == {}

@@ -4,7 +4,7 @@ sys.path.append('.')
 import appbase.bootstrap as bootstrap
 bootstrap.use_gevent()
 bootstrap.green_pg()
-bootstrap.check_settings('test')
+#bootstrap.check_settings('test')
 
 import gevent
 import json
