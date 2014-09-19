@@ -30,7 +30,7 @@ def flaskapi(app, f):
             except AccessDenied as err:
                 result = err.to_dict()
                 status_code = 403
-                app.logger.exception('Access Denied error: ' + str(result))
+                app.logger.exception('Access Denied error: ')
             except BaseError as err:
                 app.logger.exception('API Execution error: ')
                 result = err.to_dict()
@@ -70,7 +70,7 @@ def protected(f):
     def wrapper(*args, **kw):
         session_id = request.cookies.get('session_id')
         if not session_id:
-            raise AccessDenied(msg='session not found', data={'cookies': request.cookies})
+            raise AccessDenied(msg='session not found')
         _uid, groups = sessionlib.sid2uidgroups(session_id)
         if not set(groups).intersection(roles_required):
             raise AccessDenied(data=dict(groups=groups, roles_required=roles_required))
