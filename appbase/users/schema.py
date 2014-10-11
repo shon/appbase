@@ -11,8 +11,6 @@ users = Table('users', metadata,
               Column_created(),
               Column_active(),
               Column('groups', ARRAY(String), default=[]),
-              Column('fname', String, nullable=False),
-              Column('lname', String)
               )
 
 plans = Table('plans', metadata,

@@ -11,12 +11,12 @@ import appbase.users.sessions as sessionslib
 from  appbase.users.errors import InvalidEmailError, EmailExistsError, PasswordTooSmallError
 
 
-test_user_data = dict(fname='Peter', lname='Parker', password='Gwen7', email='pepa@localhost.localdomain')
-test_user_data_grp = dict(fname='Peter', lname='Parker', password='Gwen7', email='pepa2@localhost.localdomain', groups=['admin', 'member'])
-test_user_data_iv = dict(fname='Peter', lname='Parker', password='Gwen7', email='pepa @ localhost.localdomain')
-test_user_data_sp = dict(fname='Peter', lname='Parker', password='Gwen', email='pepa @ localhost.localdomain')
+test_user_data = dict(password='Gwen7', email='pepa@localhost.localdomain')
+test_user_data_grp = dict(password='Gwen7', email='pepa2@localhost.localdomain', groups=['admin', 'member'])
+test_user_data_iv = dict(password='Gwen7', email='pepa @ localhost.localdomain')
+test_user_data_sp = dict(password='Gwen', email='pepa @ localhost.localdomain')
 test_user_id = 1
-signup_user_data = dict(fname='Clark', lname='Kent', email='ckent@localhost.localdomain', password='secret')
+signup_user_data = dict(email='ckent@localhost.localdomain', password='secret')
 
 
 create = satransaction(userapis.create)
@@ -60,7 +60,6 @@ def test_create():
     assert isinstance(create(**test_user_data), int)
     d = info(test_user_data['email'])
     assert d['active'] is True
-    assert d['fname'] == test_user_data['fname']
     assert (count() - last_count) == 1
 
 
@@ -70,15 +69,12 @@ def test_create_w_groups():
     d = info(test_user_data_grp['email'])
     assert d['groups'] == test_user_data_grp['groups']
     assert d['active'] is True
-    assert d['fname'] == test_user_data_grp['fname']
     assert (count() - last_count) == 1
 
 
 def test_info():
     d = info(test_user_data['email'])
-    assert d['fname'] == test_user_data['fname']
     d = info(test_user_data['email'].upper())
-    assert d['fname'] == test_user_data['fname']
 
 
 def test_create_duplicate():
@@ -97,9 +93,8 @@ def test_signup():
     uid, groups = sessionslib.sid2uidgroups(sid)
     d = info(signup_user_data['email'])
     assert d['id'] == uid
-    assert d['groups'] == groups
+    assert d['groups'] is None
     assert d['active'] is True
-    assert d['fname'] == signup_user_data['fname']
 
 
 def test_authenticate():
@@ -137,6 +132,6 @@ def test_session_lookups():
     groups = ['grp1', 'grp2']
     for uid in uids:
         sid = sessionslib.create(uid, groups)
-        assert sessionslib.sid2uidgroups(sid) == uid, groups
+        assert sessionslib.sid2uidgroups(sid) == (uid, groups)
         sessionslib.destroy(sid)
         assert sessionslib.get(sid) == {}

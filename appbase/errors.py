@@ -10,4 +10,4 @@ class BaseError(Exception):
 
 class SecurityViolation(BaseError): pass
 class AccessDenied(BaseError):
-    msg = 'access denied'
+    msg = 'Access denied'

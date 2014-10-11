@@ -28,3 +28,8 @@ class AuthError(BaseError):
 class PasswordTooSmallError(BaseError):
     def __init__(self):
         self.msg = 'Passwords must contain at least 5 characters.'
+
+
+class InvalidTokenError(BaseError):
+    def __init__(self):
+        self.msg = 'Token is invalid or expired'

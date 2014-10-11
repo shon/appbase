@@ -15,7 +15,7 @@ from appbase.errors import SecurityViolation
 from appbase.users.schema import users, group_users
 from appbase.helpers import gen_random_token
 from appbase.common import local_path
-from .errors import EmailExistsError, InvalidEmailError, EmailiDoesNotExistError, PasswordTooSmallError
+from .errors import EmailExistsError, InvalidEmailError, EmailiDoesNotExistError, PasswordTooSmallError, InvalidTokenError
 
 SIGNUP_KEY_PREFIX = 'signup:'
 SIGNUP_LOOKUP_PREFIX = 'signuplookup:'
@@ -86,7 +86,7 @@ def invite(name, email):
     return True
 
 
-def signup(fname, lname, email, password):
+def signup(email, password, **kwargs):
     validate_password(password)
     if not validate_email(email):
         raise InvalidEmailError(email)
@@ -100,19 +100,26 @@ def signup(fname, lname, email, password):
         key = gen_signup_key(token)
         rconn.set(lookup_key, token)
         rconn.expire(lookup_key, SIGNUP_TTL)
-        d = dict(fname=fname, lname=lname, email=email, password=password)
+        d = dict(email=email, password=password)
+        d.update(kwargs)
         rconn.hmset(key, d)
         rconn.expire(key, SIGNUP_TTL)
     confirmation_link = settings.CONFIRMATION_LINK.format(TOKEN=token)
-    data = dict(NAME=fname, CONFIRMATION_LINK=confirmation_link, SIGNUP_SENDER=settings.SIGNUP_SENDER)
+    data = dict(CONFIRMATION_LINK=confirmation_link, SIGNUP_SENDER=settings.SIGNUP_SENDER)
     html = render_template('users/templates/confirmation.html', data)
     appbase.helpers.send_email(settings.SIGNUP_SENDER, email, settings.SIGNUP_SUBJECT, html=html)
     return True
 
 
-def complete_signup(token):
+def complete_signup(token, groups=None):
+    """
+    Do not expose this function directly
+    """
     key = gen_signup_key(token)
     data = rconn.hgetall(key)
+    if not data:
+        raise InvalidTokenError()
+    data['groups'] = groups
     uid = create(**data)
     user = info(uid=uid)
     return sessionslib.create(uid, user['groups'])
@@ -122,6 +129,16 @@ def encrypt(s, salt=''):
     h = hashlib.sha256()
     h.update(s + salt)
     return h.hexdigest()
+
+
+def add_to_groups(uid, groups):
+    groups_existing = info(uid).groups
+    groups_new = set(groups_existing + groups)
+    q = users.update().values(groups=groups_new).where(users.c.id == uid)
+    conn.execute(q)
+    conn.execute(group_users.delete().where(group_users.c.user_id == uid))
+    conn.execute(group_users.insert(), [{'user_id': uid, 'group_name': name} for name in groups])
+
 
 
 # Placeholder code: should be replaced with proper validation decorator
@@ -142,7 +159,7 @@ def validate_password(password):
 
 # /Placeholder code
 
-def create(fname, lname, email, password, groups=[], connection=None):
+def create(email, password, groups=[], connection=None):
     validate_password(password)
     if not validate_email(email):
         raise InvalidEmailError(email)
@@ -152,13 +169,13 @@ def create(fname, lname, email, password, groups=[], connection=None):
     conn = sa.connect()
     encpassword = encrypt(password, settings.SALT)
     created = datetime.datetime.now()
-    q = users.insert().values(fname=fname, lname=lname, email=email, password=encpassword, created=created, groups=groups)
+    q = users.insert().values(email=email, password=encpassword, created=created, groups=groups)
     conn.execute(q)
     q = select([users.c.id]).where(users.c.email == email)
     uid = conn.execute(q).fetchone()[0]
     if groups:
         conn.execute(group_users.insert(), [{'user_id': uid, 'group_name': name} for name in groups])
-    #user_created.send(uid, fname, lname, email)
+    #user_created.send(uid, email)
     if settings.SEND_WELCOME_EMAIL:
         welcome(email)
     return uid
@@ -166,7 +183,7 @@ def create(fname, lname, email, password, groups=[], connection=None):
 
 def info(email=None, uid=None):
     conn = sa.connect()
-    _fields = [users.c.id, users.c.fname, users.c.lname, users.c.active, users.c.created, users.c.groups]
+    _fields = [users.c.id, users.c.active, users.c.created, users.c.groups]
     if email:
         q = select(_fields).where(users.c.email == email.lower())
     else:
@@ -193,7 +210,7 @@ def authenticate(email, password):
 
 def edit(uid, mod_data):
     conn = sa.connect()
-    editables = set(['fname', 'lname', 'email', 'password'])
+    editables = set(['email', 'password'])
     if not editables.issuperset(mod_data.keys()):
         raise SecurityViolation()
     if 'password' in mod_data:
@@ -264,5 +281,6 @@ def import_data():
 
 def list_():
     conn = sa.connect()
-    q = users.select()
+    fields = [users.c.id, users.c.active, users.c.created, users.c.groups]
+    q = users.select(fields)
     return conn.execute(q).fetchall()
