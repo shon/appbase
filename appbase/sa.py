@@ -36,13 +36,13 @@ def Column_active():
     return Column('active', BOOLEAN, default=True)
 
 
-def tr_start(tls):
+def tr_start():
     pass
 
-def tr_complete(tls):
+def tr_complete():
     Session.commit()
     Session.remove()
 
 
-def tr_abort(tls):
+def tr_abort():
     Session.rollback()
