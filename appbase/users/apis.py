@@ -65,7 +65,7 @@ def render_template(path, data):
 
 
 def welcome(email, data={}):
-    template_path = 'users/templates/welcome.txt'
+    template_path = 'templates/welcome.txt'
     if not os.path.exists(local_path(template_path)):
         return
     text = render_template(template_path, data)
@@ -106,7 +106,7 @@ def signup(email, password, **kwargs):
         rconn.expire(key, SIGNUP_TTL)
     confirmation_link = settings.CONFIRMATION_LINK.format(TOKEN=token)
     data = dict(CONFIRMATION_LINK=confirmation_link, SIGNUP_SENDER=settings.SIGNUP_SENDER)
-    html = render_template('users/templates/confirmation.html', data)
+    html = render_template('templates/confirmation.html', data)
     appbase.helpers.send_email(settings.SIGNUP_SENDER, email, settings.SIGNUP_SUBJECT, html=html)
     return True
 
