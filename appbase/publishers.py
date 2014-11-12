@@ -1,13 +1,38 @@
+import datetime
+import decimal
+import urllib
 from functools import wraps
 import json
 
-from gevent.local import local
 from flask import abort, request, jsonify
+from flask.json import JSONEncoder
 
 import appbase.sa
 import settings
 from appbase.errors import BaseError, AccessDenied
 import appbase.users.sessions as sessionlib
+import appbase.context as context
+
+
+class CustomJSONEncoder(JSONEncoder):
+
+    def default(self, obj):
+        try:
+            if isinstance(obj, (datetime.date, datetime.datetime)):
+                return obj.isoformat()
+            elif isinstance(obj, decimal.Decimal):
+                return float(obj)
+            iterable = iter(obj)
+        except TypeError:
+            pass
+        else:
+            return list(iterable)
+        return JSONEncoder.default(self, obj)
+
+
+def support_datetime_serialization(app):
+    app.json_encoder = CustomJSONEncoder
+    return app
 
 
 def add_cors_headers(resp):
@@ -20,6 +45,13 @@ def add_cors_headers(resp):
 def flaskapi(app, f):
     @wraps(f)
     def wrapper(*args, **kw):
+        context.current.uid = 0
+        context.current.groups = []
+        session_id = request.cookies.get('session_id')
+        if session_id:
+            if request.environ['REQUEST_METHOD']:
+                session_id = urllib.unquote(session_id)
+            context.current.sid = session_id
         status_code = 200
         if request.method == 'OPTIONS':
             resp = app.make_default_options_response()
@@ -50,15 +82,14 @@ def flaskapi(app, f):
 def satransaction(f):
     @wraps(f)
     def wrapper(*args, **kw):
-        tls = local
-        appbase.sa.tr_start(tls)
+        appbase.sa.tr_start()
         try:
             result = f(*args, **kw)
-            appbase.sa.tr_complete(tls)
+            appbase.sa.tr_complete()
             return result
         except Exception as err:
             # TODO: log
-            appbase.sa.tr_abort(tls)
+            appbase.sa.tr_abort()
             raise
     return wrapper
 
@@ -68,14 +99,21 @@ def protected(f):
     if not roles_required: return f
     @wraps(f)
     def wrapper(*args, **kw):
-        session_id = request.cookies.get('session_id')
+        session_id = hasattr(context.current, 'sid') and context.current.sid or kw.pop('_session_id', None)
         if not session_id:
             raise AccessDenied(msg='session not found')
-        _uid, groups = sessionlib.sid2uidgroups(session_id)
-        if not set(groups).intersection(roles_required):
+        uid, groups = sessionlib.sid2uidgroups(session_id)
+        context.current.sid = session_id
+        context.current.uid = uid
+        context.current.groups = groups
+        if not set(context.current.groups).intersection(roles_required):
             raise AccessDenied(data=dict(groups=groups, roles_required=roles_required))
         return f(*args, **kw)
     return wrapper
+
+
+def wrapped(f):
+    return protected(satransaction(f))
 
 
 def add_url_rule(app, url, handler, methods):
