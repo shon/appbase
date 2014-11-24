@@ -3,6 +3,7 @@ import decimal
 import urllib
 from functools import wraps
 import json
+import random
 
 from flask import abort, request, jsonify
 from flask.json import JSONEncoder
@@ -68,10 +69,11 @@ def flaskapi(app, f):
                 result = err.to_dict()
                 status_code = 500
             except Exception as err:
-                app.logger.exception('Unhandled API Execution error: ')
-                result = {}
+                err_id = str(random.random())[2:]
+                app.logger.exception('Unhandled API Execution error [%s]: ', err_id)
+                result = {'msg': ('Server error: ' + err_id)}
                 status_code = 500
-                app.logger.error('parameters: %s', str(kw))
+                app.logger.error('[%s] parameters: %s', err_id, str(kw))
             resp = jsonify({'result': result})
         resp.status_code = status_code
         add_cors_headers(resp)
