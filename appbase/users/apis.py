@@ -1,5 +1,6 @@
 import datetime
 import hashlib
+import logging
 import os.path
 import re
 
@@ -15,7 +16,8 @@ from appbase.errors import SecurityViolation
 from appbase.users.schema import users, group_users
 from appbase.helpers import gen_random_token
 from appbase.common import local_path
-from .errors import EmailExistsError, InvalidEmailError, EmailiDoesNotExistError, PasswordTooSmallError, InvalidTokenError
+from .errors import EmailExistsError, InvalidEmailError, EmailiDoesNotExistError, \
+    PasswordTooSmallError, InvalidTokenError, SendEmailError
 
 SIGNUP_KEY_PREFIX = 'signup:'
 SIGNUP_LOOKUP_PREFIX = 'signuplookup:'
@@ -105,9 +107,14 @@ def signup(email, password, **kwargs):
         rconn.hmset(key, d)
         rconn.expire(key, SIGNUP_TTL)
     confirmation_link = settings.CONFIRMATION_LINK.format(TOKEN=token)
-    data = dict(CONFIRMATION_LINK=confirmation_link, SIGNUP_SENDER=settings.SIGNUP_SENDER)
+    data = dict(CONFIRMATION_LINK=confirmation_link, SIGNUP_SENDER=settings.SIGNUP_SENDER, DOMAIN=settings.DOMAIN)
     html = render_template('templates/confirmation.html', data)
-    appbase.helpers.send_email(settings.SIGNUP_SENDER, email, settings.SIGNUP_SUBJECT, html=html)
+    print(html)
+    try:
+        appbase.helpers.send_email(settings.SIGNUP_SENDER, email, settings.SIGNUP_SUBJECT, html=html)
+    except Exception:
+        logging.exception('error while sending confirmation email: ')
+        raise SendEmailError()
     return True
 
 
@@ -132,6 +139,7 @@ def encrypt(s, salt=''):
 
 
 def add_to_groups(uid, groups):
+    conn = sa.connect()
     groups_existing = info(uid).groups
     groups_new = set(groups_existing + groups)
     q = users.update().values(groups=groups_new).where(users.c.id == uid)

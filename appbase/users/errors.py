@@ -33,3 +33,8 @@ class PasswordTooSmallError(BaseError):
 class InvalidTokenError(BaseError):
     def __init__(self):
         self.msg = 'Token is invalid or expired'
+
+
+class SendEmailError(BaseError):
+    def __init__(self):
+        self.msg = 'Error sending email'
