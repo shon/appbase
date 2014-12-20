@@ -29,7 +29,7 @@ def send_email(sender, recipient, subject, text=None, html=None, images=[], repl
     msg['From'] = sender
     msg['To'] = recipient
     if bcc:
-        msg['bcc', bcc]
+        msg['bcc'] = bcc
     if reply_to:
         msg.add_header('reply-to', reply_to)
 
