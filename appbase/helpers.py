@@ -12,7 +12,7 @@ import html2text
 import settings
 
 
-def send_email(sender, recipient, subject, text=None, html=None, images=[]):
+def send_email(sender, recipient, subject, text=None, html=None, images=[], reply_to=None, bcc=None):
     """
     text: text message. If html is provided and not text, text will be auto generated
     html: html message
@@ -28,6 +28,10 @@ def send_email(sender, recipient, subject, text=None, html=None, images=[]):
     msg['Subject'] = subject
     msg['From'] = sender
     msg['To'] = recipient
+    if bcc:
+        msg['bcc', bcc]
+    if reply_to:
+        msg.add_header('reply-to', reply_to)
 
     msg.attach(MIMEText(text, 'plain', 'utf-8'))
     if html:
