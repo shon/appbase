@@ -5,7 +5,7 @@ from functools import wraps
 import json
 import random
 
-from flask import abort, request, jsonify
+from flask import request, jsonify
 from flask.json import JSONEncoder
 
 import appbase.sa
@@ -73,7 +73,8 @@ def flaskapi(app, f):
                 app.logger.exception('Unhandled API Execution error [%s]: ', err_id)
                 result = {'msg': ('Server error: ' + err_id)}
                 status_code = 500
-                app.logger.error('[%s] parameters: %s', err_id, str(kw))
+                kw_s = dict((k, str(v)[:50]) for (k, v) in kw.items())
+                app.logger.error('[%s] parameters: %s', err_id, kw_s)
             resp = jsonify({'result': result})
         resp.status_code = status_code
         add_cors_headers(resp)
@@ -101,7 +102,7 @@ def protected(f):
     if not roles_required: return f
     @wraps(f)
     def wrapper(*args, **kw):
-        session_id = hasattr(context.current, 'sid') and context.current.sid or kw.pop('_session_id', None)
+        session_id = kw.pop('_session_id', None) or hasattr(context.current, 'sid') and context.current.sid
         if not session_id:
             raise AccessDenied(msg='session not found')
         uid, groups = sessionlib.sid2uidgroups(session_id)
