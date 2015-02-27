@@ -51,3 +51,4 @@ def configure_logging(logfile, debug=True):
     logger = logging.getLogger()
     logger.addHandler(file_handler)
     logger.setLevel(level)
+    return logger
