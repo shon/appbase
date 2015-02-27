@@ -47,7 +47,7 @@ class RESTPublisherTestCase(unittest.TestCase):
         handlers = (userapis.list_, userapis.create, userapis.info, userapis.edit, userapis.remove)
         rest_publisher.map_resource('users/', handlers, resource_id=('int', 'id'))
         self.client = self.app.test_client()
-        self.test_user_data = dict(fname='Peter', lname='Parker', password='Gwen7', email='pepa2@localhost.localdomain', groups=['admin', 'member'])
+        self.test_user_data = dict(password='Gwen7', email='pepa2@localhost.localdomain', groups=['admin', 'member'])
         http_publisher.add_mapping('/api/add', add, ['POST'])
 
     def test_add_user_no_session(self):
