@@ -5,15 +5,15 @@ import os.path
 import re
 
 from blinker import signal
-from sqlalchemy.sql import select
 
 import settings
 import appbase.helpers
-import appbase.sa as sa
+import appbase.pw as pw
+import playhouse.shortcuts
 import appbase.redisutils as redisutils
 import appbase.users.sessions as sessionslib
 from appbase.errors import SecurityViolation
-from appbase.users.schema import users, group_users
+from appbase.pwusers.model import User, GroupUser
 from appbase.helpers import gen_random_token
 from appbase.common import local_path
 from .errors import EmailExistsError, InvalidEmailError, EmailiDoesNotExistError, \
@@ -109,7 +109,6 @@ def signup(email, password, **kwargs):
     confirmation_link = settings.CONFIRMATION_LINK.format(TOKEN=token)
     data = dict(CONFIRMATION_LINK=confirmation_link, SIGNUP_SENDER=settings.SIGNUP_SENDER, DOMAIN=settings.DOMAIN)
     html = render_template('templates/confirmation.html', data)
-    print(html)
     try:
         appbase.helpers.send_email(settings.SIGNUP_SENDER, email, settings.SIGNUP_SUBJECT, html=html)
     except Exception:
@@ -126,7 +125,8 @@ def complete_signup(token, groups=None):
     data = rconn.hgetall(key)
     if not data:
         raise InvalidTokenError()
-    data['groups'] = groups
+    if groups:
+        data['groups'] = groups
     uid = create(**data)
     user = info(uid=uid)
     return sessionslib.create(uid, user['groups'])
@@ -136,17 +136,6 @@ def encrypt(s, salt=''):
     h = hashlib.sha256()
     h.update(s + salt)
     return h.hexdigest()
-
-
-def add_to_groups(uid, groups):
-    conn = sa.connect()
-    groups_existing = info(uid).groups
-    groups_new = set(groups_existing + groups)
-    q = users.update().values(groups=groups_new).where(users.c.id == uid)
-    conn.execute(q)
-    conn.execute(group_users.delete().where(group_users.c.user_id == uid))
-    conn.execute(group_users.insert(), [{'user_id': uid, 'group_name': name} for name in groups])
-
 
 
 # Placeholder code: should be replaced with proper validation decorator
@@ -167,37 +156,36 @@ def validate_password(password):
 
 # /Placeholder code
 
-def create(email, password, groups=[], connection=None):
+def create(email, password, groups=None, connection=None):
+    email = email.lower()
+
     validate_password(password)
     if not validate_email(email):
         raise InvalidEmailError(email)
-    email = email.lower()
+
     if uid_by_email(email):
         raise EmailExistsError(email)
-    conn = sa.connect()
+
     encpassword = encrypt(password, settings.SALT)
     created = datetime.datetime.now()
-    q = users.insert().values(email=email, password=encpassword, created=created, groups=groups)
-    conn.execute(q)
-    q = select([users.c.id]).where(users.c.email == email)
-    uid = conn.execute(q).fetchone()[0]
-    if groups:
-        conn.execute(group_users.insert(), [{'user_id': uid, 'group_name': name} for name in groups])
+    user = User.create(email=email, password=encpassword, created=created, groups=groups)
+    user.save()
+
+    for name in groups:
+        GroupUser.create(user_id=user.id, group=name)
     #user_created.send(uid, email)
     if settings.SEND_WELCOME_EMAIL:
         welcome(email)
-    return uid
+    return user.id
 
 
 def info(email=None, uid=None):
-    conn = sa.connect()
-    _fields = [users.c.id, users.c.active, users.c.created, users.c.groups]
     if email:
-        q = select(_fields).where(users.c.email == email.lower())
+        cond = (User.email == email.lower())
     else:
-        q = select(_fields).where(users.c.id == uid)
-    res = conn.execute(q)
-    return dict(zip(res.keys(), res.fetchone()))
+        cond = (User.id == uid)
+    user = User.select(User.id, User.active, User.created, User.groups).where(cond)[0]
+    return playhouse.shortcuts.model_to_dict(user)
 
 
 def authenticate(email, password):
@@ -206,45 +194,44 @@ def authenticate(email, password):
     """
     if not validate_email(email):
         raise InvalidEmailError(email)
-    conn = sa.connect()
-    q = select([users.c.id, users.c.password, users.c.groups]).where(users.c.email == email.lower())
-    row = conn.execute(q).fetchone()
-    if not row:
+    user = User.get(User.email == email.lower())
+    if not user:
         raise EmailiDoesNotExistError(email)
-    uid, encpassword, groups = conn.execute(q).fetchone()
-    if encpassword == encrypt(password, settings.SALT):
-        return sessionslib.create(uid, groups)
+    if user.password == encrypt(password, settings.SALT):
+        return sessionslib.create(user.id, user.groups)
 
 
 def edit(uid, mod_data):
-    conn = sa.connect()
     editables = set(['email', 'password'])
     if not editables.issuperset(mod_data.keys()):
         raise SecurityViolation()
     if 'password' in mod_data:
         mod_data['password'] = encrypt(mod_data['password'], settings.SALT)
-    q = users.update().values(**mod_data).where(users.c.id == uid)
-    conn.execute(q)
+    q = Users.update(**mod_data).where(User.id == uid)
+    q.execute()
     return True
 
 
 def enable(uid):
-    conn = sa.connect()
-    q = users.update().values(active=True).where(users.c.id == uid)
-    conn.execute(q)
+    q = User.update(active=True).where(User.id == uid)
+    q.execute()
 
 
 def disable(uid):
-    conn = sa.connect()
-    q = users.update().values(active=False).where(users.c.id == uid)
-    conn.execute(q)
+    q = User.update(active=False).where(User.id == uid)
+    q.execute()
 
 
 def uid_by_email(email):
-    conn = sa.connect()
-    q = select([users.c.id]).where(users.c.email == email.lower())
-    row = conn.execute(q).fetchone()
-    return row and row[0] or None
+    """
+    -> user or None
+    """
+    #User.get().where(User.email == email.lower())
+    try:
+        user_id = User.get(User.email == email.lower())
+    except User.DoesNotExist:
+        user_id = None
+    return user_id
 
 PASSRESET_PREFIX = 'passreset:'
 
@@ -288,7 +275,5 @@ def import_data():
 
 
 def list_():
-    conn = sa.connect()
-    fields = [users.c.id, users.c.active, users.c.created, users.c.groups]
-    q = users.select(fields)
-    return conn.execute(q).fetchall()
+    fields = [Users.id, users.active, users.created]
+    return User.select(*fields)
