@@ -5,10 +5,11 @@ from functools import wraps
 import json
 import random
 
-from flask import request, jsonify
+from flask import request, jsonify, make_response
 from flask.json import JSONEncoder
 
-import appbase.sa
+import appbase.pw as db
+from appbase.flaskutils import jsonify_unsafe
 import settings
 from appbase.errors import BaseError, AccessDenied
 import appbase.users.sessions as sessionlib
@@ -75,24 +76,28 @@ def flaskapi(app, f):
                 status_code = 500
                 kw_s = dict((k, str(v)[:50]) for (k, v) in kw.items())
                 app.logger.error('[%s] parameters: %s', err_id, kw_s)
-            resp = jsonify({'result': result})
-        resp.status_code = status_code
+            try:
+                resp = jsonify(result)
+            except TypeError:
+                resp = jsonify_unsafe(result)
+            resp.status_code = status_code
         add_cors_headers(resp)
         return resp
     return wrapper
 
 
-def satransaction(f):
+def dbtransaction(f):
     @wraps(f)
     def wrapper(*args, **kw):
-        appbase.sa.tr_start()
+        # with pw.db.transaction() ?
+        db.tr_start()
         try:
             result = f(*args, **kw)
-            appbase.sa.tr_complete()
+            db.tr_complete()
             return result
         except Exception as err:
             # TODO: log
-            appbase.sa.tr_abort()
+            db.tr_abort()
             raise
     return wrapper
 
@@ -116,14 +121,14 @@ def protected(f):
 
 
 def wrapped(f):
-    return protected(satransaction(f))
+    return protected(dbtransaction(f))
 
 
 def add_url_rule(app, url, handler, methods):
     # add debugging, inspection here
     print('%s -> %s [%s]' % (url, handler, str(methods)))
     methods.append('OPTIONS')
-    app.add_url_rule(url, None, flaskapi(app, protected(satransaction(handler))), methods=methods)
+    app.add_url_rule(url, None, flaskapi(app, protected(dbtransaction(handler))), methods=methods)
 
 
 class RESTPublisher(object):
