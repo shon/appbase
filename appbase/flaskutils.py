@@ -1,13 +1,13 @@
-# http://flask.pocoo.org/snippets/56/
-
 from datetime import timedelta
-from flask import make_response, request, current_app
+import json
+from flask import make_response, request, current_app, Response
 from functools import update_wrapper
 
 
 def crossdomain(origin=None, methods=None, headers=None,
                 max_age=10368000, attach_to_all=True,
                 automatic_options=True):
+    # http://flask.pocoo.org/snippets/56/
     if methods is not None:
         methods = ', '.join(sorted(x.upper() for x in methods))
     if headers is not None and not isinstance(headers, basestring):
@@ -47,3 +47,7 @@ def crossdomain(origin=None, methods=None, headers=None,
         f.provide_automatic_options = False
         return update_wrapper(wrapped_function, f)
     return decorator
+
+
+def jsonify_unsafe(o):
+    return Response(json.dumps(o), mimetype='application/json')
