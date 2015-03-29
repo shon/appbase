@@ -1,4 +1,5 @@
 import datetime
+from functools import wraps
 
 from sqlalchemy import create_engine, MetaData, Column, Integer, DateTime, BOOLEAN, String
 from sqlalchemy.orm import sessionmaker
@@ -46,3 +47,18 @@ def tr_complete():
 
 def tr_abort():
     Session.rollback()
+
+
+def dbtransaction(f):
+    @wraps(f)
+    def wrapper(*args, **kw):
+        tr_start()
+        try:
+            result = f(*args, **kw)
+            tr_complete()
+            return result
+        except Exception as err:
+            # TODO: log
+            tr_abort()
+            raise
+    return wrapper

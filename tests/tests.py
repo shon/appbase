@@ -17,7 +17,7 @@ import appbase.publishers
 import appbase.sa as sa
 from appbase.errors import BaseError
 
-satransaction = appbase.publishers.satransaction
+dbtransaction = appbase.sa.dbtransaction
 
 
 class RESTPublisherTestCase(unittest.TestCase):
@@ -50,10 +50,10 @@ class RESTPublisherTestCase(unittest.TestCase):
         Adding a user and then retreiving it via API and mathing
         """
         resp = self.app.post('/api/users/', data=json.dumps(self.test_users[0]))
-        id = json.loads(resp.data)['result']
+        id = json.loads(resp.data)
 
         resp = self.app.get('/api/users/%s' % id)
-        user = json.loads(resp.data)['result']
+        user = json.loads(resp.data)
         self.assertDictEqual(user, self.test_users[0])
 
     def test_get_users(self):
@@ -63,7 +63,7 @@ class RESTPublisherTestCase(unittest.TestCase):
         self.app.post('/api/users/', data=json.dumps(self.test_users[0]))
         self.app.post('/api/users/', data=json.dumps(self.test_users[1]))
         resp = self.app.get('/api/users/')
-        users = json.loads(resp.data)['result']
+        users = json.loads(resp.data)
         self.assertTrue(self.test_users[0] in users)
         self.assertTrue(self.test_users[1] in users)
 
@@ -106,23 +106,23 @@ class HTTPPublisherTestCase(unittest.TestCase):
     def test_500_on_error(self):
         msg = 'killme'
         resp = self.app.post('/die/', data=json.dumps({'msg': msg}))
-        result = json.loads(resp.data)['result']
+        result = json.loads(resp.data)
         self.assertEqual(result['msg'], msg)
         self.assertEqual(resp.status_code, 500)
 
     def test_add(self):
         resp = self.app.post('/add/', data=json.dumps({'a': 2, 'b': 3}))
-        result = json.loads(resp.data)['result']
+        result = json.loads(resp.data)
         self.assertEqual(result, 5)
 
     def test_iszero(self):
         resp = self.app.post('/iszero/', data=json.dumps({'n': 3}))
-        result = json.loads(resp.data)['result']
+        result = json.loads(resp.data)
         self.assertFalse(result)
 
     def test_iszero_form(self):
         resp = self.app.post('/iszero/', data={'n': 3})
-        result = json.loads(resp.data)['result']
+        result = json.loads(resp.data)
         self.assertFalse(result)
 
     def test_cors(self):
@@ -179,8 +179,8 @@ class SATransaction(unittest.TestCase):
                       Column("name", String),
                       extend_existing=True
                       )
-        satransaction(sa.metadata.drop_all)(sa.engine)
-        satransaction(sa.metadata.create_all)(sa.engine)
+        dbtransaction(sa.metadata.drop_all)(sa.engine)
+        dbtransaction(sa.metadata.create_all)(sa.engine)
 
     def test_sessions(self):
         """
@@ -191,14 +191,14 @@ class SATransaction(unittest.TestCase):
         values = [job.value for job in jobs]
         assert values[0] is not values[1]
 
-    @satransaction
+    @dbtransaction
     def _test_insert(self):
         conn = sa.connect()
         q = self.books.insert().values(name='A Book')
         conn.execute(q)
         assert((1, 'A Book') in list(conn.execute(self.books.select())))
 
-    @satransaction
+    @dbtransaction
     def theapi(self, book_id):
         conn = sa.connect()
         q = self.books.insert().values(id=book_id, name='Another Book')

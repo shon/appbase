@@ -76,9 +76,9 @@ def flaskapi(app, f):
                 status_code = 500
                 kw_s = dict((k, str(v)[:50]) for (k, v) in kw.items())
                 app.logger.error('[%s] parameters: %s', err_id, kw_s)
-            try:
+            if isinstance(result, dict):
                 resp = jsonify(result)
-            except TypeError:
+            else:
                 resp = jsonify_unsafe(result)
             resp.status_code = status_code
         add_cors_headers(resp)
