@@ -1,0 +1,7 @@
+Hello {NAME},
+
+We are glad to invite you to {APPNAME}.
+Here is the <a href={SIGNUP_LINK}>signup link</a> for you.
+
+Thank you,
+{INVITER}
