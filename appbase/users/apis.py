@@ -17,7 +17,7 @@ from appbase.users.model import User, GroupUser
 from appbase.helpers import gen_random_token
 from appbase.common import local_path
 from .errors import EmailExistsError, InvalidEmailError, EmailiDoesNotExistError, \
-    PasswordTooSmallError, InvalidTokenError, SendEmailError
+    PasswordTooSmallError, InvalidTokenError, SendEmailError, AuthError
 
 SIGNUP_KEY_PREFIX = 'signup:'
 SIGNUP_LOOKUP_PREFIX = 'signuplookup:'
@@ -199,6 +199,7 @@ def authenticate(email, password):
         raise EmailiDoesNotExistError(email)
     if user.password == encrypt(password, settings.SALT):
         return sessionslib.create(user.id, user.groups)
+    raise AuthError(email)
 
 
 def edit(uid, mod_data):
@@ -275,5 +276,5 @@ def import_data():
 
 
 def list_():
-    fields = [Users.id, users.active, users.created]
-    return User.select(*fields)
+    fields = [User.id, User.email, User.active, User.created, User.groups]
+    return list(User.select(*fields))
