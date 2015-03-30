@@ -13,7 +13,7 @@ import playhouse.shortcuts
 import appbase.redisutils as redisutils
 import appbase.users.sessions as sessionslib
 from appbase.errors import SecurityViolation
-from appbase.pwusers.model import User, GroupUser
+from appbase.users.model import User, GroupUser
 from appbase.helpers import gen_random_token
 from appbase.common import local_path
 from .errors import EmailExistsError, InvalidEmailError, EmailiDoesNotExistError, \
