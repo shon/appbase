@@ -12,6 +12,7 @@ db = PooledPostgresqlExtDatabase(
     user=settings.DB_USER,
     password=settings.DB_PASSWORD,
     max_connections=32,
+    register_hstore=False,
     stale_timeout=300)  # 5 minutes.
 
 
