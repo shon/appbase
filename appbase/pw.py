@@ -1,7 +1,7 @@
 import datetime
 
 from peewee import PrimaryKeyField, DateTimeField, BooleanField, Model
-from playhouse.pool import PooledPostgresqlExtDatabase
+from playhouse.pool import PooledPostgresqlExtDatabase, PostgresqlExtDatabase
 from playhouse.shortcuts import model_to_dict
 
 import settings
@@ -20,9 +20,8 @@ class BaseModel(Model):
     class Meta:
         database = db
 
-    def to_dict(self):
-        return model_to_dict(self)
-
+    def to_dict(self, only=None):
+        return model_to_dict(self, only=only)
 
 
 class CommonModel(BaseModel):
