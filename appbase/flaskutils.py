@@ -2,7 +2,7 @@ from datetime import timedelta
 import json
 from flask import make_response, request, current_app, Response
 from functools import update_wrapper
-
+import settings
 
 def crossdomain(origin=None, methods=None, headers=None,
                 max_age=10368000, attach_to_all=True,
@@ -50,4 +50,7 @@ def crossdomain(origin=None, methods=None, headers=None,
 
 
 def jsonify_unsafe(o):
-    return Response(json.dumps(o), mimetype='application/json')
+    if settings.ENV == 'dev':
+        return Response(json.dumps(o, sort_keys=True, indent=4, separators=(',', ': ')), mimetype='application/json')
+    else:
+        return Response(json.dumps(o), mimetype='application/json')

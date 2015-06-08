@@ -5,6 +5,9 @@ SALT = 'PLEASE_CHANGE'
 DB_NAME = 'devdb'
 DB_URL = 'postgres:///' + DB_NAME
 
+# Environment settings. 'dev' or 'prod' depending on the environment used.
+ENV = 'dev'
+
 # Redis
 REDIS_HOST = 'localhost'
 REDIS_PORT = 6379
