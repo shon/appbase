@@ -9,7 +9,6 @@ from flask import request, jsonify, make_response
 from flask.json import JSONEncoder
 
 import appbase.pw as db
-from appbase.flaskutils import jsonify_unsafe
 import settings
 from appbase.errors import BaseError, AccessDenied
 import appbase.users.sessions as sessionlib
@@ -30,6 +29,10 @@ class CustomJSONEncoder(JSONEncoder):
         else:
             return list(iterable)
         return JSONEncoder.default(self, obj)
+
+
+def jsonify_unsafe(o):
+    return json.dumps(o, cls=CustomJSONEncoder)
 
 
 def support_datetime_serialization(app):
@@ -79,7 +82,7 @@ def flaskapi(app, f):
             if isinstance(result, dict):
                 resp = jsonify(result)
             else:
-                resp = jsonify_unsafe(result)
+                resp = make_response(jsonify_unsafe(result))
             resp.status_code = status_code
         add_cors_headers(resp)
         return resp
@@ -127,8 +130,10 @@ def wrapped(f):
 def add_url_rule(app, url, handler, methods):
     # add debugging, inspection here
     print('%s -> %s [%s]' % (url, handler, str(methods)))
-    methods.append('OPTIONS')
-    app.add_url_rule(url, None, flaskapi(app, protected(dbtransaction(handler))), methods=methods)
+    if not 'OPTIONS' in methods:
+        methods.append('OPTIONS')
+    name = url + '-' + str(methods)
+    app.add_url_rule(url, name, flaskapi(app, protected(dbtransaction(handler))), methods=methods)
 
 
 class RESTPublisher(object):
