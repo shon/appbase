@@ -11,9 +11,19 @@ setup(
     description='Helps develop python applications',
     long_description=open("README.rst").read(),
     packages=find_packages(),
+    install_requires=[
+        'blinker',
+        'jsonschema',
+        'gevent',
+        'sqlalchemy',
+        'psycopg2',
+        'psycogreen',
+        'flask',
+        'html2text',
+        'redis'
+      ],
     author='Shekhar Tiwatne',
     author_email='pythonic@gmail.com',
     license="http://www.opensource.org/licenses/mit-license.php",
     test_suite="tests",
     )
-
