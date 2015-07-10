@@ -1,3 +1,5 @@
+redis
+blinker
 jsonschema
 gevent
 sqlalchemy
