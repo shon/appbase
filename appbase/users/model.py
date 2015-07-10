@@ -7,6 +7,8 @@ from appbase.pw import BaseModel, CommonModel
 
 
 class User(CommonModel):
+    class Meta:
+        db_table = 'users'
     email = CharField(null=False, unique=True, index=True)
     password = CharField()
     groups = ArrayField(CharField, default=[])
