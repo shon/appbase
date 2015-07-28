@@ -13,7 +13,7 @@ db = PooledPostgresqlExtDatabase(
     password=settings.DB_PASSWORD,
     max_connections=32,
     register_hstore=False,
-    stale_timeout=300)  # 5 minutes.
+    stale_timeout=60*2) # 2 minutes
 
 
 class BaseModel(Model):
@@ -31,13 +31,20 @@ class CommonModel(BaseModel):
 
 
 def tr_start():
-    db.connect()
+    #db.connect()
+    # explicitly connecting for each request is possibly not required and
+    # needless to say it is slower.  peewee would connect anyway when model is
+    # used.
+    pass
 
 
 def tr_complete():
     if not db.is_closed():
         db.close()
+        print('complete: is_closed: ', db.is_closed())
 
 
 def tr_abort():
     db.rollback()
+    if not db.is_closed():
+        db.close()
