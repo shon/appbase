@@ -41,7 +41,6 @@ def tr_start():
 def tr_complete():
     if not db.is_closed():
         db.close()
-        print('complete: is_closed: ', db.is_closed())
 
 
 def tr_abort():
