@@ -90,7 +90,6 @@ def flaskapi(app, f):
 
 
 def dbtransaction(f):
-    @wraps(f)
     def wrapper(*args, **kw):
         # with pw.db.transaction() ?
         db.tr_start()
@@ -108,7 +107,6 @@ def dbtransaction(f):
 def protected(f):
     roles_required = getattr(f, 'roles_required', None)
     if not roles_required: return f
-    @wraps(f)
     def wrapper(*args, **kw):
         session_id = kw.pop('_session_id', None) or hasattr(context.current, 'sid') and context.current.sid
         if not session_id:
@@ -132,8 +130,9 @@ def add_url_rule(app, url, handler, methods):
     print('%s -> %s [%s]' % (url, handler, str(methods)))
     if not 'OPTIONS' in methods:
         methods.append('OPTIONS')
-    name = url + '-' + str(methods)
-    app.add_url_rule(url, name, flaskapi(app, protected(dbtransaction(handler))), methods=methods)
+    endpoint = url + '-' + str(methods)
+    f = flaskapi(app, protected(dbtransaction(handler)))
+    app.add_url_rule(url, endpoint, f, methods=methods)
 
 
 class RESTPublisher(object):
@@ -197,7 +196,7 @@ class RESTPublisher(object):
 
 class HTTPPublisher(object):
     """
-    Expose some methods or functions over HTTP.
+    Expose functions/callables over HTTP.
     """
     def __init__(self, flask_app):
         self.app = flask_app
