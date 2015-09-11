@@ -156,17 +156,20 @@ def validate_password(password):
 
 # /Placeholder code
 
-def create(email, password, groups=None, name=None, connection=None):
+def create(email, password=None, groups=None, name=None, connection=None):
     email = email.lower()
 
-    validate_password(password)
-    if not validate_email(email):
-        raise InvalidEmailError(email)
+    if password:
+        validate_password(password)
+        if not validate_email(email):
+            raise InvalidEmailError(email)
+        encpassword = encrypt(password, settings.SALT)
+    else:
+        encpassword = None
 
     if uid_by_email(email):
         raise EmailExistsError(email)
 
-    encpassword = encrypt(password, settings.SALT)
     created = datetime.datetime.now()
     user = User.create(email=email, password=encpassword, created=created, groups=groups or [])
     user.save()
@@ -230,12 +233,9 @@ def uid_by_email(email):
     """
     -> user or None
     """
-    #User.get().where(User.email == email.lower())
-    try:
-        user_id = User.get(User.email == email.lower())
-    except User.DoesNotExist:
-        user_id = None
-    return user_id
+    user = User.select(User.id).where(User.email == email.lower()).first()
+    if user:
+        return user.id
 
 PASSRESET_PREFIX = 'passreset:'
 

@@ -11,7 +11,7 @@ class User(CommonModel):
         db_table = 'users'
     name = CharField(null=True)
     email = CharField(null=False, unique=True, index=True)
-    password = CharField()
+    password = CharField(null=True)
     groups = ArrayField(CharField, default=[])
     connection = BinaryJSONField(null=True)  # {'provider': 'google', 'token': <token>}
 
