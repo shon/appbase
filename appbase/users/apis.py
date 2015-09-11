@@ -156,7 +156,7 @@ def validate_password(password):
 
 # /Placeholder code
 
-def create(email, password, groups=None, connection=None):
+def create(email, password, groups=None, name=None, connection=None):
     email = email.lower()
 
     validate_password(password)
@@ -168,11 +168,12 @@ def create(email, password, groups=None, connection=None):
 
     encpassword = encrypt(password, settings.SALT)
     created = datetime.datetime.now()
-    user = User.create(email=email, password=encpassword, created=created, groups=groups)
+    user = User.create(email=email, password=encpassword, created=created, groups=groups or [])
     user.save()
 
-    for name in groups:
-        GroupUser.create(user_id=user.id, group=name)
+    if groups:
+        for name in groups:
+            GroupUser.create(user_id=user.id, group=name)
     #user_created.send(uid, email)
     if settings.SEND_WELCOME_EMAIL:
         welcome(email)
@@ -184,11 +185,11 @@ def info(email=None, uid=None):
         cond = (User.email == email.lower())
     else:
         cond = (User.id == uid)
-    user = User.select(User.id, User.active, User.created, User.groups).where(cond)[0]
+    user = User.select(User.name, User.id, User.active, User.created, User.groups).where(cond)[0]
     return playhouse.shortcuts.model_to_dict(user)
 
 
-def authenticate(email, password):
+def authenticate(email, password='', _oauthed=False):
     """
     returns session if successful else returns None
     """
@@ -197,13 +198,15 @@ def authenticate(email, password):
     user = User.get(User.email == email.lower())
     if not user:
         raise EmailiDoesNotExistError(email)
+    if _oauthed:
+        return sessionslib.create(user.id, user.groups)
     if user.password == encrypt(password, settings.SALT):
         return sessionslib.create(user.id, user.groups)
     raise AuthError(email)
 
 
 def edit(uid, mod_data):
-    editables = set(['email', 'password'])
+    editables = set(['name', 'email', 'password'])
     if not editables.issuperset(mod_data.keys()):
         raise SecurityViolation()
     if 'password' in mod_data:
