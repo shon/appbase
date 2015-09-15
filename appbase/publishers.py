@@ -162,7 +162,7 @@ class RESTPublisher(object):
                     def post():
                 class Todo:
                     def get():
-                    def post():
+                    def put():
                     def delete():
                 todo_collection = Todos()
                 todo_resource = Todo()
@@ -189,7 +189,7 @@ class RESTPublisher(object):
         if get_resource:
             add_url_rule(self.app, resource_url, get_resource, methods=['GET'])
         if edit_resource:
-            add_url_rule(self.app, resource_url, edit_resource, methods=['POST'])
+            add_url_rule(self.app, resource_url, edit_resource, methods=['PUT'])
         if delete_resource:
             add_url_rule(self.app, resource_url, delete_resource, methods=['DELETE'])
 
@@ -198,11 +198,13 @@ class HTTPPublisher(object):
     """
     Expose functions/callables over HTTP.
     """
-    def __init__(self, flask_app):
+    def __init__(self, flask_app, api_urls_prefix='/api/'):
         self.app = flask_app
+        self.urls_prefix = api_urls_prefix
 
     def add_mapping(self, url, handler, methods=['GET']):
         """
         Add a mapping for a callable.
         """
+        url = self.urls_prefix + url
         add_url_rule(self.app, url, handler, methods=methods)
