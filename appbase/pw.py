@@ -25,9 +25,7 @@ class BaseModel(Model):
 
 
 class CommonModel(BaseModel):
-    id = PrimaryKeyField()
     created = DateTimeField(default=datetime.datetime.now)
-    active = BooleanField(default=True)
 
 
 def tr_start():

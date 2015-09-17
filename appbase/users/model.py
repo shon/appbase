@@ -1,6 +1,6 @@
 import datetime
 
-from peewee import CharField, DateTimeField, ForeignKeyField, IntegerField
+from peewee import CharField, DateTimeField, ForeignKeyField, IntegerField, BooleanField
 from playhouse.postgres_ext import ArrayField, BinaryJSONField
 
 from appbase.pw import BaseModel, CommonModel
@@ -12,6 +12,7 @@ class User(CommonModel):
     name = CharField(null=True)
     email = CharField(null=False, unique=True, index=True)
     password = CharField(null=True)
+    active = BooleanField(default=True)
     groups = ArrayField(CharField, default=[])
     connection = BinaryJSONField(null=True)  # {'provider': 'google', 'token': <token>}
 

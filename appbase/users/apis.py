@@ -171,12 +171,12 @@ def create(email, password=None, groups=None, name=None, connection=None):
         raise EmailExistsError(email)
 
     created = datetime.datetime.now()
-    user = User.create(email=email, password=encpassword, created=created, groups=groups or [])
+    user = User.create(name=name, email=email, password=encpassword, created=created, groups=groups or [])
     user.save()
 
     if groups:
-        for name in groups:
-            GroupUser.create(user_id=user.id, group=name)
+        for gname in groups:
+            GroupUser.create(user_id=user.id, group=gname)
     #user_created.send(uid, email)
     if settings.SEND_WELCOME_EMAIL:
         welcome(email)

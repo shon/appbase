@@ -1,6 +1,7 @@
 from datetime import timedelta
 import json
 from flask import make_response, request, current_app, Response
+from flask.json import JSONEncoder
 from functools import update_wrapper
 import settings
 
@@ -54,3 +55,35 @@ def jsonify_unsafe(o):
         return Response(json.dumps(o, sort_keys=True, indent=4, separators=(',', ': ')), mimetype='application/json')
     else:
         return Response(json.dumps(o), mimetype='application/json')
+
+
+class CustomJSONEncoder(JSONEncoder):
+
+    def default(self, obj):
+        try:
+            if isinstance(obj, (datetime.date, datetime.datetime)):
+                return obj.isoformat()
+            elif isinstance(obj, decimal.Decimal):
+                return float(obj)
+            iterable = iter(obj)
+        except TypeError:
+            pass
+        else:
+            return list(iterable)
+        return JSONEncoder.default(self, obj)
+
+
+def jsonify_unsafe(o):
+    return json.dumps(o, cls=CustomJSONEncoder)
+
+
+def support_datetime_serialization(app):
+    app.json_encoder = CustomJSONEncoder
+    return app
+
+
+def add_cors_headers(resp):
+    resp.headers['Access-Control-Allow-Origin'] = '*'
+    resp.headers['Access-Control-Max-Age'] = '10368000'
+    resp.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, OPTIONS, PATCH'
+    resp.headers['Access-Control-Allow-Headers'] = request.headers.get('Access-Control-Request-Headers', '')

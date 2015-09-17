@@ -6,45 +6,13 @@ import json
 import random
 
 from flask import request, jsonify, make_response
-from flask.json import JSONEncoder
 
+from appbase.flaskutils import support_datetime_serialization, add_cors_headers
 import appbase.pw as db
 import settings
 from appbase.errors import BaseError, AccessDenied
 import appbase.users.sessions as sessionlib
 import appbase.context as context
-
-
-class CustomJSONEncoder(JSONEncoder):
-
-    def default(self, obj):
-        try:
-            if isinstance(obj, (datetime.date, datetime.datetime)):
-                return obj.isoformat()
-            elif isinstance(obj, decimal.Decimal):
-                return float(obj)
-            iterable = iter(obj)
-        except TypeError:
-            pass
-        else:
-            return list(iterable)
-        return JSONEncoder.default(self, obj)
-
-
-def jsonify_unsafe(o):
-    return json.dumps(o, cls=CustomJSONEncoder)
-
-
-def support_datetime_serialization(app):
-    app.json_encoder = CustomJSONEncoder
-    return app
-
-
-def add_cors_headers(resp):
-    resp.headers['Access-Control-Allow-Origin'] = '*'
-    resp.headers['Access-Control-Max-Age'] = '10368000'
-    resp.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, OPTIONS, PATCH'
-    resp.headers['Access-Control-Allow-Headers'] = request.headers.get('Access-Control-Request-Headers', '')
 
 
 def flaskapi(app, f):
@@ -112,17 +80,11 @@ def protected(f):
         if not session_id:
             raise AccessDenied(msg='session not found')
         uid, groups = sessionlib.sid2uidgroups(session_id)
-        context.current.sid = session_id
-        context.current.uid = uid
-        context.current.groups = groups
+        context.set_context(sid=session_id, uid=uid, groups=groups)
         if not set(context.current.groups).intersection(roles_required):
             raise AccessDenied(data=dict(groups=groups, roles_required=roles_required))
         return f(*args, **kw)
     return wrapper
-
-
-def wrapped(f):
-    return protected(dbtransaction(f))
 
 
 def add_url_rule(app, url, handler, methods):
