@@ -52,8 +52,8 @@ def crossdomain(origin=None, methods=None, headers=None,
 
 
 def jsonify_unsafe(o):
-    extra_params = dict(sort_keys=True, indent=4, separators=(',', ': ')) if settings.ENV == 'dev' else {}
-    return Response(json.dumps(o, cls=CustomJSONEncoder, **extra_params), mimetype='application/json')
+    extra_params = dict(sort_keys=True, indent=4, separators=(',', ': ')) if getattr(settings, 'ENV', 'ENV') == 'dev' else {}
+    return json.dumps(o, cls=CustomJSONEncoder, **extra_params)
 
 
 class CustomJSONEncoder(JSONEncoder):

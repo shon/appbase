@@ -4,6 +4,7 @@ sys.path.append('.')
 import appbase.bootstrap as bootstrap
 bootstrap.use_gevent()
 bootstrap.green_pg()
+bootstrap.configure_logging('app.log')
 #bootstrap.check_settings('test')
 
 import gevent
@@ -72,7 +73,9 @@ class RESTPublisherTestCase(unittest.TestCase):
         Adding a new user and changing their password and verifying
         """
         new_user = {'email': 'eviluser@example.com', 'password': 'weakpass'}
-        self.app.post('/api/users/0', data=json.dumps(new_user))
+        self.app.put('/api/users/0', data=json.dumps(new_user))
+        resp = self.app.get('/api/users/')
+        users = json.loads(resp.data)
         self.assertEqual(users[0]['password'], new_user['password'])
 
     def test_delete_user(self):
@@ -95,7 +98,7 @@ class RESTPublisherTestCase(unittest.TestCase):
 class HTTPPublisherTestCase(unittest.TestCase):
     def setUp(self):
         self.app = Flask(__name__)
-        http_publisher = appbase.publishers.HTTPPublisher(self.app)
+        http_publisher = appbase.publishers.HTTPPublisher(self.app, api_urls_prefix='')
         # TODO: Think, should we move it to respective tests
         http_publisher.add_mapping('/add/', add, ['POST'])
         http_publisher.add_mapping('/iszero/', is_zero, ['POST'])
