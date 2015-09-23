@@ -21,7 +21,7 @@ class BaseModel(Model):
         database = db
 
     def to_dict(self, only=None):
-        return model_to_dict(self, only=only)
+        return model_to_dict(self, only=only, recurse=False)
 
 
 class CommonModel(BaseModel):
