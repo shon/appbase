@@ -1,4 +1,5 @@
-from datetime import timedelta
+import datetime
+import decimal
 import json
 from flask import make_response, request, current_app, Response
 from flask.json import JSONEncoder
@@ -15,7 +16,7 @@ def crossdomain(origin=None, methods=None, headers=None,
         headers = ', '.join(x.upper() for x in headers)
     if not isinstance(origin, basestring):
         origin = ', '.join(origin)
-    if isinstance(max_age, timedelta):
+    if isinstance(max_age, datetime.timedelta):
         max_age = max_age.total_seconds()
 
     def get_methods():
@@ -51,10 +52,8 @@ def crossdomain(origin=None, methods=None, headers=None,
 
 
 def jsonify_unsafe(o):
-    if settings.ENV == 'dev':
-        return Response(json.dumps(o, sort_keys=True, indent=4, separators=(',', ': ')), mimetype='application/json')
-    else:
-        return Response(json.dumps(o), mimetype='application/json')
+    extra_params = dict(sort_keys=True, indent=4, separators=(',', ': ')) if settings.ENV == 'dev' else {}
+    return Response(json.dumps(o, cls=CustomJSONEncoder, **extra_params), mimetype='application/json')
 
 
 class CustomJSONEncoder(JSONEncoder):
@@ -71,10 +70,6 @@ class CustomJSONEncoder(JSONEncoder):
         else:
             return list(iterable)
         return JSONEncoder.default(self, obj)
-
-
-def jsonify_unsafe(o):
-    return json.dumps(o, cls=CustomJSONEncoder)
 
 
 def support_datetime_serialization(app):
