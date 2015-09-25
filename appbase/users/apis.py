@@ -7,6 +7,7 @@ import re
 from blinker import signal
 
 import settings
+import appbase.context as context
 import appbase.helpers
 import appbase.pw as pw
 import playhouse.shortcuts
@@ -206,6 +207,15 @@ def authenticate(email, password='', _oauthed=False):
     if user.password == encrypt(password, settings.SALT):
         return sessionslib.create(user.id, user.groups)
     raise AuthError(email)
+
+
+def set_user_context(uid=None, email=None):
+    if email:
+        user = User.get(User.email == email.lower())
+    else:
+        user = User.get(User.id == uid)
+    sid = sessionslib.create(user.id, user.groups)
+    context.set_context(uid=user.id, sid=sid, groups=user.groups)
 
 
 def edit(uid, mod_data):

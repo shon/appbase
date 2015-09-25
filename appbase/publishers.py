@@ -87,7 +87,7 @@ def protected(f):
 
 def add_url_rule(app, url, handler, methods):
     # add debugging, inspection here
-    print('%s -> %s [%s]' % (url, handler, str(methods)))
+    print('%s -> %s %s' % (url, handler, str(methods)))
     if not 'OPTIONS' in methods:
         methods.append('OPTIONS')
     endpoint = url + '-' + str(methods)
