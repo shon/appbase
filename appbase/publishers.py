@@ -3,7 +3,7 @@ from functools import wraps
 import json
 import random
 
-from flask import request, jsonify, make_response
+from flask import request, jsonify, make_response, Response
 
 from appbase.flaskutils import support_datetime_serialization, add_cors_headers, jsonify_unsafe
 import appbase.pw as db
@@ -47,6 +47,8 @@ def flaskapi(app, f):
                 app.logger.error('[%s] parameters: %s', err_id, kw_s)
             if isinstance(result, dict):
                 resp = jsonify(result)
+            elif isinstance(result, Response):
+                resp = result
             else:
                 resp = make_response(jsonify_unsafe(result))
             resp.status_code = status_code
