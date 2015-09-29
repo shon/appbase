@@ -31,6 +31,10 @@ def get_signup_url():
 
 
 def login(token=None, authorization_response=None):
+    """
+    returns session_id, info
+    info: {name: name, email: email}
+    """
     if not token:
         google = OAuth2Session(settings.G_CLIENT_ID, scope=settings.G_SCOPE, redirect_uri=settings.G_REDIRECT_URI)
         token_url = "https://accounts.google.com/o/oauth2/token"
@@ -40,7 +44,8 @@ def login(token=None, authorization_response=None):
     email = ginfo['email']
     if not userapis.uid_by_email(email):
         userapis.create(name=ginfo['name'], email=email, connection={'provider': 'google', 'token': token})
-    return userapis.authenticate(email=ginfo['email'], _oauthed=True)
+    userinfo = {'name': ginfo['name'], 'email': ginfo['email']}
+    return userapis.authenticate(email=ginfo['email'], _oauthed=True), userinfo
 
 
 def update(email, mod_data):
