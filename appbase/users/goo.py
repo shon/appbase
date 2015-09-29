@@ -42,9 +42,10 @@ def login(token=None, authorization_response=None):
     google = OAuth2Session(settings.G_CLIENT_ID, token=token)
     ginfo = google.get('https://www.googleapis.com/oauth2/v1/userinfo').json()
     email = ginfo['email']
-    if not userapis.uid_by_email(email):
-        userapis.create(name=ginfo['name'], email=email, connection={'provider': 'google', 'token': token})
-    userinfo = {'name': ginfo['name'], 'email': ginfo['email']}
+    uid = userapis.uid_by_email(email)
+    if not uid:
+        uid = userapis.create(name=ginfo['name'], email=email, connection={'provider': 'google', 'token': token})
+    userinfo = {'name': ginfo['name'], 'email': ginfo['email'], 'id': uid}
     return userapis.authenticate(email=ginfo['email'], _oauthed=True), userinfo
 
 
