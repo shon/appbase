@@ -47,9 +47,9 @@ def flaskapi(app, f):
                 app.logger.error('[%s] parameters: %s', err_id, kw_s)
             if isinstance(result, dict):
                 resp = jsonify(result)
-                status_code = resp.status_code
             elif isinstance(result, Response):
                 resp = result
+                status_code = resp.status_code
             else:
                 resp = make_response(jsonify_unsafe(result))
             resp.status_code = status_code
