@@ -82,8 +82,8 @@ def protected(f):
             raise AccessDenied(msg='session not found')
         uid, groups = sessionlib.sid2uidgroups(session_id)
         context.set_context(sid=session_id, uid=uid, groups=groups)
-        if not set(context.current.groups).intersection(roles_required):
-            raise AccessDenied(data=dict(groups=groups, roles_required=roles_required))
+        #if not set(context.current.groups).intersection(roles_required):
+        #    raise AccessDenied(data=dict(groups=groups, roles_required=roles_required))
         return f(*args, **kw)
     return wrapper
 
@@ -94,7 +94,7 @@ def add_url_rule(app, url, handler, methods):
     if not 'OPTIONS' in methods:
         methods.append('OPTIONS')
     endpoint = url + '-' + str(methods)
-    f = flaskapi(app, protected(dbtransaction(handler)))
+    f = flaskapi(app, dbtransaction(protected(handler)))
     app.add_url_rule(url, endpoint, f, methods=methods)
 
 
