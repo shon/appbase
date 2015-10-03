@@ -5,9 +5,8 @@ import random
 
 from flask import request, jsonify, make_response, Response
 
-from appbase.flaskutils import support_datetime_serialization, add_cors_headers, jsonify_unsafe
-import appbase.pw as db
-import settings
+from appbase.flaskutils import add_cors_headers, jsonify_unsafe
+from appbase.pw import dbtransaction
 from appbase.errors import BaseError, AccessDenied
 import appbase.users.sessions as sessionlib
 import appbase.context as context
@@ -58,32 +57,18 @@ def flaskapi(app, f):
     return wrapper
 
 
-def dbtransaction(f):
-    def wrapper(*args, **kw):
-        # with pw.db.transaction() ?
-        db.tr_start()
-        try:
-            result = f(*args, **kw)
-            db.tr_complete()
-            return result
-        except Exception as err:
-            # TODO: log
-            db.tr_abort()
-            raise
-    return wrapper
-
-
 def protected(f):
-    roles_required = getattr(f, 'roles_required', None)
-    if not roles_required: return f
     def wrapper(*args, **kw):
         session_id = kw.pop('_session_id', None) or hasattr(context.current, 'sid') and context.current.sid
         if not session_id:
             raise AccessDenied(msg='session not found')
         uid, groups = sessionlib.sid2uidgroups(session_id)
         context.set_context(sid=session_id, uid=uid, groups=groups)
-        #if not set(context.current.groups).intersection(roles_required):
-        #    raise AccessDenied(data=dict(groups=groups, roles_required=roles_required))
+
+        roles_required = getattr(f, 'roles_required', None)
+        if roles_required and not set(context.current.groups).intersection(roles_required):
+            raise AccessDenied(data=dict(groups=groups, roles_required=roles_required))
+
         return f(*args, **kw)
     return wrapper
 

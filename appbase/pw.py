@@ -28,20 +28,9 @@ class CommonModel(BaseModel):
     created = DateTimeField(default=datetime.datetime.now)
 
 
-def tr_start():
-    #db.connect()
-    # explicitly connecting for each request is possibly not required and
-    # needless to say it is slower.  peewee would connect anyway when model is
-    # used.
-    pass
-
-
-def tr_complete():
-    if not db.is_closed():
-        db.close()
-
-
-def tr_abort():
-    db.rollback()
-    if not db.is_closed():
-        db.close()
+def dbtransaction(f):
+    def wrapper(*args, **kw):
+        with db.atomic() as txn:
+            result = f(*args, **kw)
+            return result
+    return wrapper
