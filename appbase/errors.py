@@ -8,6 +8,8 @@ class BaseError(Exception):
                 'data': getattr(self, 'data', {})}
 
 
+class NotFoundError(Exception):
+    code = 404
 class SecurityViolation(BaseError): pass
 class AccessDenied(BaseError):
     msg = 'Access denied'

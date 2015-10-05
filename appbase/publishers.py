@@ -7,7 +7,7 @@ from flask import request, jsonify, make_response, Response
 
 from appbase.flaskutils import add_cors_headers, jsonify_unsafe
 from appbase.pw import dbtransaction
-from appbase.errors import BaseError, AccessDenied
+from appbase.errors import BaseError, AccessDenied, NotFoundError
 import appbase.users.sessions as sessionlib
 import appbase.context as context
 
@@ -33,6 +33,10 @@ def flaskapi(app, f):
                 result = err.to_dict()
                 status_code = 403
                 app.logger.exception('Access Denied error: ')
+            except NotFoundError as err:
+                result = err.to_dict()
+                status_code = err.code or 404
+                app.logger.exception('Object not found error: ')
             except BaseError as err:
                 app.logger.exception('API Execution error: ')
                 result = err.to_dict()
@@ -60,12 +64,16 @@ def flaskapi(app, f):
 def protected(f):
     def wrapper(*args, **kw):
         session_id = kw.pop('_session_id', None) or hasattr(context.current, 'sid') and context.current.sid
-        if not session_id:
-            raise AccessDenied(msg='session not found')
-        uid, groups = sessionlib.sid2uidgroups(session_id)
-        context.set_context(sid=session_id, uid=uid, groups=groups)
-
+        login_required = getattr(f, 'login_required', None)
         roles_required = getattr(f, 'roles_required', None)
+
+        if (login_required or roles_required) and not session_id:
+            raise AccessDenied(msg='session not found')
+
+        if session_id:
+            uid, groups = sessionlib.sid2uidgroups(session_id)
+            context.set_context(sid=session_id, uid=uid, groups=groups)
+
         if roles_required and not set(context.current.groups).intersection(roles_required):
             raise AccessDenied(data=dict(groups=groups, roles_required=roles_required))
 
@@ -81,6 +89,15 @@ def add_url_rule(app, url, handler, methods):
     endpoint = url + '-' + str(methods)
     f = flaskapi(app, dbtransaction(protected(handler)))
     app.add_url_rule(url, endpoint, f, methods=methods)
+
+
+def get_or_not_found(f):
+    def wrapper(*args, **kw):
+        ret = f(*args, **kw)
+        if ret is None:
+            raise errors.NotFoundError()
+        return ret
+    return wrapper
 
 
 class RESTPublisher(object):
@@ -135,6 +152,7 @@ class RESTPublisher(object):
         if add_resource:
             add_url_rule(self.app, collection_url, add_resource, methods=['POST'])
         if get_resource:
+            get_resource_wrapped = get_or_not_found(get_resource)
             add_url_rule(self.app, resource_url, get_resource, methods=['GET'])
         if edit_resource:
             add_url_rule(self.app, resource_url, edit_resource, methods=['PUT'])

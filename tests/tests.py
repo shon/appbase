@@ -57,6 +57,13 @@ class RESTPublisherTestCase(unittest.TestCase):
         user = json.loads(resp.data)
         self.assertDictEqual(user, self.test_users[0])
 
+    def test_get_user_404(self):
+        """
+        Request a user which does exist
+        """
+        resp = self.app.get('/api/users/%s' % 'id-doesnt-exist')
+        self.assertEqual(resp.status_code, 404)
+
     def test_get_users(self):
         """
         Adding two users and then retreiving the collection and comparing
