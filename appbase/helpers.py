@@ -2,10 +2,14 @@ from base64 import b64encode
 import hashlib
 import random
 import smtplib
+import sys
 
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
-from email.MIMEImage import MIMEImage
+if sys.version[0] == '2':
+    from email.MIMEImage import MIMEImage
+else:
+    from email.mime.image import MIMEImage
 
 import html2text
 

@@ -18,8 +18,9 @@ def green_pg():
 
 
 def setdefaultencoding():
-    reload(sys)
-    sys.setdefaultencoding('utf-8')
+    if sys.version[0] == '2':
+        reload(sys)
+        sys.setdefaultencoding("utf-8")
 
 
 def check_settings(conf):
