@@ -137,7 +137,7 @@ class RESTPublisher(object):
                 (get_todo, create_todo, ..)
         """
         id_type, id_name = resource_id
-        collection_url = self.urls_prefix + url
+        collection_url = (self.urls_prefix + url) if not url.startswith('/') else url
         resource_url = collection_url + '<' + id_type + ':' + id_name + '>'
 
         if isinstance(handlers, dict):
@@ -172,5 +172,5 @@ class HTTPPublisher(object):
         """
         Add a mapping for a callable.
         """
-        url = self.urls_prefix + url
+        url = (self.urls_prefix + url) if not url.startswith('/') else url
         add_url_rule(self.app, url, handler, methods=methods)
