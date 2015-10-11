@@ -31,7 +31,7 @@ class RESTPublisherTestCase(unittest.TestCase):
         self.app = Flask(__name__)
         # Creating a RESTPublisher
         rest_publisher = appbase.publishers.RESTPublisher(self.app)
-        handlers = (get_all, add_user, get_user, edit_user, delete_user)
+        handlers = (get_all, add_user, None, get_user, edit_user, delete_user)
         rest_publisher.map_resource('users/', handlers, resource_id=('int', 'id'))
         self.app = self.app.test_client()
         # Dummy test users
@@ -80,7 +80,7 @@ class RESTPublisherTestCase(unittest.TestCase):
         Adding a new user and changing their password and verifying
         """
         new_user = {'email': 'eviluser@example.com', 'password': 'weakpass'}
-        self.app.put('/api/users/0', data=json.dumps(new_user))
+        self.app.patch('/api/users/0', data=json.dumps(new_user))
         resp = self.app.get('/api/users/')
         users = json.loads(resp.data)
         self.assertEqual(users[0]['password'], new_user['password'])
@@ -107,7 +107,7 @@ class HTTPPublisherTestCase(unittest.TestCase):
         self.app = Flask(__name__)
         http_publisher = appbase.publishers.HTTPPublisher(self.app, api_urls_prefix='')
         # TODO: Think, should we move it to respective tests
-        http_publisher.add_mapping('/add/', add, ['POST'])
+        http_publisher.add_mapping('/add/', add, ['GET', 'POST'])
         http_publisher.add_mapping('/iszero/', is_zero, ['POST'])
         def die(msg): raise BaseError(msg=str(msg))
         http_publisher.add_mapping('/die/', die, ['POST'])
@@ -124,6 +124,11 @@ class HTTPPublisherTestCase(unittest.TestCase):
         resp = self.app.post('/add/', data=json.dumps({'a': 2, 'b': 3}))
         result = json.loads(resp.data)
         self.assertEqual(result, 5)
+
+    def test_add_GET(self):
+        resp = self.app.get('/add/?a=2&b=3')
+        result = json.loads(resp.data)
+        self.assertEqual(result, '23')
 
     def test_iszero(self):
         resp = self.app.post('/iszero/', data=json.dumps({'n': 3}))

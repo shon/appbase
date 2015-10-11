@@ -12,6 +12,14 @@ import appbase.users.sessions as sessionlib
 import appbase.context as context
 
 
+def extract_kw(request):
+    return (request.args and dict((k, v) for (k, v) in request.args.items())) or \
+            request.json or \
+            (request.data and json.loads(request.data.decode('utf-8'))) or \
+            request.form or \
+            {}
+
+
 def flaskapi(app, f):
     @wraps(f)
     def wrapper(*args, **kw):
@@ -26,7 +34,7 @@ def flaskapi(app, f):
         if request.method == 'OPTIONS':
             resp = app.make_default_options_response()
         else:
-            kw.update(request.json or (request.data and json.loads(request.data)) or request.form)
+            kw.update(extract_kw(request))
             try:
                 result = f(*args, **kw)
             except AccessDenied as err:
@@ -95,7 +103,7 @@ def get_or_not_found(f):
     def wrapper(*args, **kw):
         ret = f(*args, **kw)
         if ret is None:
-            raise errors.NotFoundError()
+            raise NotFoundError()
         return ret
     return wrapper
 
@@ -140,10 +148,8 @@ class RESTPublisher(object):
         collection_url = (self.urls_prefix + url) if not url.startswith('/') else url
         resource_url = collection_url + '<' + id_type + ':' + id_name + '>'
 
-        if isinstance(handlers, dict):
-            raise NotImplemented
-        elif isinstance(handlers, (list, tuple)):
-            get_collection, add_resource, get_resource, edit_resource, delete_resource = handlers
+        if isinstance(handlers, (list, tuple)):
+            get_collection, add_resource, replace_resource, get_resource, edit_resource, delete_resource = handlers
         else:
             raise NotImplemented
 
@@ -151,11 +157,13 @@ class RESTPublisher(object):
             add_url_rule(self.app, collection_url, get_collection, methods=['GET'])
         if add_resource:
             add_url_rule(self.app, collection_url, add_resource, methods=['POST'])
+        if replace_resource:
+            add_url_rule(self.app, collection_url, replace_resource, methods=['PUT'])
         if get_resource:
             get_resource_wrapped = get_or_not_found(get_resource)
-            add_url_rule(self.app, resource_url, get_resource, methods=['GET'])
+            add_url_rule(self.app, resource_url, get_resource_wrapped, methods=['GET'])
         if edit_resource:
-            add_url_rule(self.app, resource_url, edit_resource, methods=['PUT'])
+            add_url_rule(self.app, resource_url, edit_resource, methods=['PATCH'])
         if delete_resource:
             add_url_rule(self.app, resource_url, delete_resource, methods=['DELETE'])
 
