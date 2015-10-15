@@ -29,17 +29,16 @@ class CommonModel(BaseModel):
 
 
 def dbtransaction(f):
+    """
+    wrapper that make db transactions automic
+    note db connections are used only when it is needed (hence there is no usual connection open/close)
+    """
     def wrapper(*args, **kw):
-        handlers_failed = False
-        db.connect()
+        #print('connections in use: [%s]' % db._in_use)
         with db.atomic() as txn:
-            try:
-                result = f(*args, **kw)
-                return result
-            except Exception as err:
-                handlers_failed = True
+            result = f(*args, **kw)
+            #print('connections in use: [%s]' % db._in_use)
         if not db.is_closed():
             db.close()
-        if handlers_failed:
-            raise
+        return result
     return wrapper

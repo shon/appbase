@@ -1,16 +1,19 @@
+import logging
+
 from nose.tools import raises
-from peewee import CharField
+from peewee import IntegerField, CharField
 
 import appbase.bootstrap as bootstrap
 
 from appbase.publishers import dbtransaction
 import appbase.pw as pw
 
-test_data = dict(name='some name')
-
+logger = logging.getLogger('peewee')
+logger.setLevel(logging.DEBUG)
+logger.addHandler(logging.StreamHandler())
 
 class SomeThing(pw.BaseModel):
-    name = CharField(null=False, unique=True)
+    name = CharField()
 
 
 themodels = [SomeThing]
@@ -22,12 +25,11 @@ def create():
 
 def create_err():
     create()
-    create()
     raise Exception('Test Exception')
 
 
-create = dbtransaction(create)
-create_err = dbtransaction(create_err)
+t_create = dbtransaction(create)
+t_create_err = dbtransaction(create_err)
 
 
 def setUpModule():
@@ -42,10 +44,11 @@ def tearDownModule():
 
 
 def test_transaction():
-    try:
-        create_err()
-    except Exception:
-        pass
-    thing = create()
+    for i in xrange(100):
+        try:
+            t_create_err()
+        except Exception:
+            pass
+    thing = t_create()
     things = list(SomeThing.select())
     assert len(things) == 1
