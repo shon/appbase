@@ -30,7 +30,16 @@ class CommonModel(BaseModel):
 
 def dbtransaction(f):
     def wrapper(*args, **kw):
+        handlers_failed = False
+        db.connect()
         with db.atomic() as txn:
-            result = f(*args, **kw)
-            return result
+            try:
+                result = f(*args, **kw)
+                return result
+            except Exception as err:
+                handlers_failed = True
+        if not db.is_closed():
+            db.close()
+        if handlers_failed:
+            raise
     return wrapper
