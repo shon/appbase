@@ -1,6 +1,7 @@
 import os
 from requests_oauthlib import OAuth2Session
 
+from appbase.errors import AccessDenied
 import appbase.users.apis as userapis
 
 import settings
@@ -26,7 +27,7 @@ if not settings.G_REDIRECT_URI.startswith('https'):
 def get_signup_url():
     authorization_base_url = "https://accounts.google.com/o/oauth2/auth"
     google = OAuth2Session(settings.G_CLIENT_ID, scope=settings.G_SCOPE, redirect_uri=settings.G_REDIRECT_URI)
-    authorization_url, state = google.authorization_url(authorization_base_url, access_type='online', approval_prompt='force')
+    authorization_url, state = google.authorization_url(authorization_base_url, access_type='online')
     return authorization_url
 
 
@@ -43,6 +44,9 @@ def login(token=None, authorization_response=None):
     ginfo = google.get('https://www.googleapis.com/oauth2/v1/userinfo').json()
     email = ginfo['email']
     uid = userapis.uid_by_email(email)
+    domain = getattr(settings, 'G_DOMAIN', None)
+    if domain and not email.endswith(domain):
+        raise AccessDenied(msg='Access restricted', data={'domain': domain})
     if not uid:
         uid = userapis.create(name=ginfo['name'], email=email, connection={'provider': 'google', 'token': token})
     userinfo = {'name': ginfo['name'], 'email': ginfo['email'], 'id': uid}
