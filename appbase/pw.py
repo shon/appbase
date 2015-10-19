@@ -36,10 +36,12 @@ def dbtransaction(f):
     """
     def wrapper(*args, **kw):
         #print('connections in use: [%s]' % db._in_use)
-        with db.atomic() as txn:
-            result = f(*args, **kw)
-            #print('connections in use: [%s]' % db._in_use)
-        if not db.is_closed():
-            db.close()
+        try:
+            with db.atomic() as txn:
+                result = f(*args, **kw)
+                #print('connections in use: [%s]' % db._in_use)
+        finally:
+            if not db.is_closed():
+                db.close()
         return result
     return wrapper
