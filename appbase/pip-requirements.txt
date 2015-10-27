@@ -2,15 +2,11 @@ redis
 blinker
 jsonschema
 gevent
-sqlalchemy
 peewee
 psycopg2
 psycogreen
 flask
 html2text
-# Services
-keen
-mailchimp
 # Dev 
 pss
 ipython
