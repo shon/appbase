@@ -1,9 +1,12 @@
 import datetime
 import decimal
 import json
+from functools import update_wrapper
+
+import arrow
 from flask import make_response, request, current_app, Response
 from flask.json import JSONEncoder
-from functools import update_wrapper
+
 import settings
 
 def crossdomain(origin=None, methods=None, headers=None,
@@ -58,9 +61,14 @@ def jsonify_unsafe(o):
 
 class CustomJSONEncoder(JSONEncoder):
 
+    tz = None
+
     def default(self, obj):
         try:
             if isinstance(obj, (datetime.date, datetime.datetime)):
+                if tz:
+                    dt = arrow.get(obj)
+                    return dt.to(tz).isoformat()
                 return obj.isoformat()
             elif isinstance(obj, decimal.Decimal):
                 return float(obj)
@@ -72,7 +80,8 @@ class CustomJSONEncoder(JSONEncoder):
         return JSONEncoder.default(self, obj)
 
 
-def support_datetime_serialization(app):
+def support_datetime_serialization(app, tz=None):
+    CustomJSONEncoder.tz = tz
     app.json_encoder = CustomJSONEncoder
     return app
 
