@@ -66,9 +66,9 @@ class CustomJSONEncoder(JSONEncoder):
     def default(self, obj):
         try:
             if isinstance(obj, (datetime.date, datetime.datetime)):
-                if tz:
+                if self.tz:
                     dt = arrow.get(obj)
-                    return dt.to(tz).isoformat()
+                    return dt.to(self.tz).isoformat()
                 return obj.isoformat()
             elif isinstance(obj, decimal.Decimal):
                 return float(obj)
