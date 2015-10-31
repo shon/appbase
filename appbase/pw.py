@@ -1,4 +1,5 @@
 import datetime
+from functools import update_wrapper
 
 from peewee import PrimaryKeyField, DateTimeField, BooleanField, Model
 from playhouse.pool import PooledPostgresqlExtDatabase, PostgresqlExtDatabase
@@ -44,4 +45,6 @@ def dbtransaction(f):
             if not db.is_closed():
                 db.close()
         return result
+
+    update_wrapper(wrapper, f, ('__name__', 'cache',))
     return wrapper

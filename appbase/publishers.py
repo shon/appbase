@@ -1,7 +1,9 @@
-import urllib
-from functools import wraps
+import datetime
 import json
 import random
+import urllib
+
+from functools import wraps, lru_cache, update_wrapper
 
 from flask import request, jsonify, make_response, Response
 
@@ -10,6 +12,10 @@ from appbase.pw import dbtransaction
 from appbase.errors import BaseError, AccessDenied, NotFoundError
 import appbase.users.sessions as sessionlib
 import appbase.context as context
+
+
+cache = lru_cache()
+cache_ttl = datetime.timedelta(0, (10*60))
 
 
 def extract_kw(request):
@@ -89,13 +95,29 @@ def protected(f):
     return wrapper
 
 
+
+def cached(f):
+    if hasattr(f, 'cache'):
+        cf = cache(f)
+        cf.began = datetime.datetime.now()
+        def wrapper(*args, **kw):
+            now = datetime.datetime.now()
+            if (now - cf.began) > cache_ttl:
+                cf.cache_clear()
+                cf.began = now
+            return cf(*args, **kw)
+        wrapper.cache_info = cf.cache_info
+        return wrapper
+    return f
+
+
 def add_url_rule(app, url, handler, methods):
     # add debugging, inspection here
     print('%s -> %s %s' % (url, handler, str(methods)))
     if not 'OPTIONS' in methods:
         methods.append('OPTIONS')
     endpoint = url + '-' + str(methods)
-    f = flaskapi(app, dbtransaction(protected(handler)))
+    f = flaskapi(app, protected(cached(dbtransaction(handler))))
     app.add_url_rule(url, endpoint, f, methods=methods)
 
 
