@@ -20,6 +20,7 @@ from appbase.errors import BaseError
 
 dbtransaction = appbase.sa.dbtransaction
 
+load_json = lambda resp: json.loads(resp.data.decode('utf-8'))
 
 class RESTPublisherTestCase(unittest.TestCase):
     """
@@ -51,10 +52,10 @@ class RESTPublisherTestCase(unittest.TestCase):
         Adding a user and then retreiving it via API and mathing
         """
         resp = self.app.post('/api/users/', data=json.dumps(self.test_users[0]))
-        id = json.loads(resp.data)
+        id = load_json(resp)
 
         resp = self.app.get('/api/users/%s' % id)
-        user = json.loads(resp.data)
+        user = load_json(resp)
         self.assertDictEqual(user, self.test_users[0])
 
     def test_get_user_404(self):
@@ -71,7 +72,7 @@ class RESTPublisherTestCase(unittest.TestCase):
         self.app.post('/api/users/', data=json.dumps(self.test_users[0]))
         self.app.post('/api/users/', data=json.dumps(self.test_users[1]))
         resp = self.app.get('/api/users/')
-        users = json.loads(resp.data)
+        users = load_json(resp)
         self.assertTrue(self.test_users[0] in users)
         self.assertTrue(self.test_users[1] in users)
 
@@ -82,7 +83,7 @@ class RESTPublisherTestCase(unittest.TestCase):
         new_user = {'email': 'eviluser@example.com', 'password': 'weakpass'}
         self.app.patch('/api/users/0', data=json.dumps(new_user))
         resp = self.app.get('/api/users/')
-        users = json.loads(resp.data)
+        users = load_json(resp)
         self.assertEqual(users[0]['password'], new_user['password'])
 
     def test_delete_user(self):
@@ -116,28 +117,40 @@ class HTTPPublisherTestCase(unittest.TestCase):
     def test_500_on_error(self):
         msg = 'killme'
         resp = self.app.post('/die/', data=json.dumps({'msg': msg}))
-        result = json.loads(resp.data)
+        result = load_json(resp)
         self.assertEqual(result['msg'], msg)
         self.assertEqual(resp.status_code, 500)
 
     def test_add(self):
         resp = self.app.post('/add/', data=json.dumps({'a': 2, 'b': 3}))
-        result = json.loads(resp.data)
+        result = load_json(resp)
         self.assertEqual(result, 5)
+        resp = self.app.post('/add/', data=json.dumps({'a': 2, 'b': 3}))
+        result = load_json(resp)
+        self.assertEqual(result, 5)
+        resp = self.app.post('/add/', data=json.dumps({'a': 2, 'b': 3}))
+        result = load_json(resp)
+        self.assertEqual(result, 5)
+        resp = self.app.post('/add/', data=json.dumps({'a': 3, 'b': 3}))
+        result = load_json(resp)
+        self.assertEqual(result, 6)
+        resp = self.app.post('/add/', data=json.dumps({'a': 3, 'b': 3}))
+        result = load_json(resp)
+        self.assertEqual(result, 6)
 
     def test_add_GET(self):
         resp = self.app.get('/add/?a=2&b=3')
-        result = json.loads(resp.data)
+        result = load_json(resp)
         self.assertEqual(result, '23')
 
     def test_iszero(self):
         resp = self.app.post('/iszero/', data=json.dumps({'n': 3}))
-        result = json.loads(resp.data)
+        result = load_json(resp)
         self.assertFalse(result)
 
     def test_iszero_form(self):
         resp = self.app.post('/iszero/', data={'n': 3})
-        result = json.loads(resp.data)
+        result = load_json(resp)
         self.assertFalse(result)
 
     def test_cors(self):
@@ -185,6 +198,7 @@ def is_zero(n):
 
 def add(a, b):
     return a + b
+add.cache = True
 
 
 class SATransaction(unittest.TestCase):

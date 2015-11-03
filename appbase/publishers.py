@@ -1,9 +1,13 @@
 import datetime
 import json
 import random
+import sys
 import urllib
 
-from functools import wraps, lru_cache, update_wrapper
+if sys.version[0] == '2':
+    from functools32 import wraps, lru_cache, update_wrapper
+else:
+    from functools import wraps, lru_cache, update_wrapper
 
 from flask import request, jsonify, make_response, Response
 

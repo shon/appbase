@@ -46,5 +46,6 @@ def dbtransaction(f):
                 db.close()
         return result
 
-    update_wrapper(wrapper, f, ('__name__', 'cache',))
+    if hasattr(f, 'cache'):
+        update_wrapper(wrapper, f, ('__name__', 'cache',))
     return wrapper
