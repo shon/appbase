@@ -36,14 +36,15 @@ def dbtransaction(f):
     note db connections are used only when it is needed (hence there is no usual connection open/close)
     """
     def wrapper(*args, **kw):
-        print('connections in use: [%s]' % len(db._in_use))
+        print('connections in use (enter): [%s]' % len(db._in_use))
         try:
-            with db.atomic() as txn:
+            with db.transaction():
                 result = f(*args, **kw)
                 print('connections in use: [%s]' % len(db._in_use))
         finally:
             if not db.is_closed():
                 db.close()
+        print('connections in use (exit): [%s]' % len(db._in_use))
         return result
 
     if hasattr(f, 'cache'):
