@@ -24,11 +24,12 @@ def add(a, b):
 add.roles_required = ['admin']
 
 
-def setUpModule():
+def setup_module():
+    teardown_module()
     sa.metadata.create_all(sa.engine)
 
 
-def tearDownModule():
+def teardown_module():
     sa.metadata.drop_all(sa.engine)
     redisutils.rconn.flushall()
 
@@ -44,7 +45,7 @@ class RESTPublisherTestCase(unittest.TestCase):
         # Creating a RESTPublisher
         rest_publisher = appbase.publishers.RESTPublisher(self.app)
         http_publisher = appbase.publishers.HTTPPublisher(self.app)
-        handlers = (userapis.list_, userapis.create, userapis.info, userapis.edit, userapis.remove)
+        handlers = (userapis.list_, userapis.create, None, userapis.info, userapis.edit, userapis.remove)
         rest_publisher.map_resource('users/', handlers, resource_id=('int', 'id'))
         self.client = self.app.test_client()
         self.test_user_data = dict(password='Gwen7', email='pepa2@localhost.localdomain', groups=['admin', 'member'])
