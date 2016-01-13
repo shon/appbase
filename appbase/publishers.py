@@ -5,9 +5,9 @@ import sys
 import urllib
 
 if sys.version[0] == '2':
-    from functools32 import wraps, lru_cache, update_wrapper
+    from functools32 import wraps, lru_cache
 else:
-    from functools import wraps, lru_cache, update_wrapper
+    from functools import wraps, lru_cache
 
 from flask import request, jsonify, make_response, Response
 
@@ -80,6 +80,7 @@ def flaskapi(app, f):
 
 
 def protected(f):
+    @wraps(f)
     def wrapper(*args, **kw):
         session_id = kw.pop('_session_id', None) or hasattr(context.current, 'sid') and context.current.sid
         login_required = getattr(f, 'login_required', None)
@@ -99,11 +100,11 @@ def protected(f):
     return wrapper
 
 
-
 def cached(f):
     if hasattr(f, 'cache'):
         cf = cache(f)
         cf.began = datetime.datetime.now()
+        @wraps(f)
         def wrapper(*args, **kw):
             now = datetime.datetime.now()
             if (now - cf.began) > cache_ttl:
@@ -115,13 +116,17 @@ def cached(f):
     return f
 
 
+def api_factory(handler):
+    return protected(cached(dbtransaction(handler)))
+
+
 def add_url_rule(app, url, handler, methods):
     # add debugging, inspection here
     print('%s -> %s %s' % (url, handler, str(methods)))
     if not 'OPTIONS' in methods:
         methods.append('OPTIONS')
     endpoint = url + '-' + str(methods)
-    f = flaskapi(app, protected(cached(dbtransaction(handler))))
+    f = flaskapi(app, api_factory(handler))
     app.add_url_rule(url, endpoint, f, methods=methods)
 
 

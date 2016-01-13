@@ -1,8 +1,13 @@
+import sys
 import datetime
-from functools import update_wrapper
+if sys.version[0] == '2':
+    from functools32 import wraps
+else:
+    from functools import wraps
 
-from peewee import PrimaryKeyField, DateTimeField, BooleanField, Model
-from playhouse.pool import PooledPostgresqlExtDatabase, PostgresqlExtDatabase
+
+from peewee import DateTimeField, Model
+from playhouse.pool import PooledPostgresqlExtDatabase
 from playhouse.shortcuts import model_to_dict
 
 import settings
@@ -35,18 +40,13 @@ def dbtransaction(f):
     wrapper that make db transactions automic
     note db connections are used only when it is needed (hence there is no usual connection open/close)
     """
+    @wraps(f)
     def wrapper(*args, **kw):
-        print('connections in use (enter): [%s]' % len(db._in_use))
         try:
             with db.transaction():
                 result = f(*args, **kw)
-                print('connections in use: [%s]' % len(db._in_use))
         finally:
             if not db.is_closed():
                 db.close()
-        print('connections in use (exit): [%s]' % len(db._in_use))
         return result
-
-    if hasattr(f, 'cache'):
-        update_wrapper(wrapper, f, ('cache',))
     return wrapper
