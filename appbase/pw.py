@@ -4,7 +4,7 @@ if sys.version[0] == '2':
     from functools32 import wraps
 else:
     from functools import wraps
-
+from enum import Enum
 
 from peewee import DateTimeField, Model
 from playhouse.pool import PooledPostgresqlExtDatabase
@@ -50,3 +50,23 @@ def dbtransaction(f):
                 db.close()
         return result
     return wrapper
+
+
+def enumify(TheModel, name_field='name', val_field='id'):
+    """
+    Converts a model rowa into an enum
+    Can be effective cache for mostly unchanging data.
+    Limitation: No auto updates. If you update the model and you are using process manager like gunicorn you
+    would need to restart to rnsure enums are updated
+
+    eg.
+    >>> class Week(BaseModel):
+            day = CharField()
+            num = IntField()
+
+    >>> weekenum = enumify(Week, 'day', 'num')
+    >>> print(weekenum.monday.num)
+    """
+    fields = getattr(TheModel, name_field), getattr(TheModel, val_field)
+    data = list((name.replace(' ', '_').lower(), v) for (name, v) in TheModel.select(*fields).tuples())
+    return Enum(TheModel.__name__, data)
