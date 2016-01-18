@@ -15,7 +15,7 @@ setup(
         'blinker',
         'jsonschema',
         'gevent',
-        'sqlalchemy',
+        'peewee',
         'psycopg2',
         'psycogreen',
         'flask',
