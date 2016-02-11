@@ -27,12 +27,12 @@ class BaseModel(Model):
         database = db
         only_save_dirty = True
 
-    def to_dict(self, only=None):
-        return model_to_dict(self, only=only, recurse=False)
+    def to_dict(self, only=None, recurse=False):
+        return model_to_dict(self, only=only, recurse=recurse)
 
 
 class CommonModel(BaseModel):
-    created = DateTimeField(default=datetime.datetime.now)
+    created = DateTimeField(default=datetime.datetime.utcnow)
 
 
 def dbtransaction(f):
