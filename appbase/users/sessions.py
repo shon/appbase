@@ -27,6 +27,10 @@ def get_for(uid):
     return get(sid)
 
 
+def uid2sid(uid):
+    return rconn.hget(rev_lookup_key, uid)
+
+
 def sid2uidgroups(sid):
     """
     => uid (int), groups (list)
