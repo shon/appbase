@@ -58,7 +58,7 @@ def flaskapi(app, f):
             except BaseError as err:
                 app.logger.exception('API Execution error: ')
                 result = err.to_dict()
-                status_code = 500
+                status_code = getattr(err, 'code', 500)
             except Exception as err:
                 err_id = str(random.random())[2:]
                 app.logger.exception('Unhandled API Execution error [%s]: ', err_id)
