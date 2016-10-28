@@ -10,6 +10,15 @@ class BaseError(Exception):
 
 class NotFoundError(BaseError):
     code = 404
-class SecurityViolation(BaseError): pass
+
+
+class SecurityViolation(BaseError):
+    pass
+
+
 class AccessDenied(BaseError):
     msg = 'Access denied'
+
+
+class ValidationError(BaseError):
+    code = 400
