@@ -74,7 +74,7 @@ def flaskapi(app, f):
             else:
                 resp = make_response(jsonify_unsafe(result))
             resp.status_code = status_code
-        add_cors_headers(resp)
+        #add_cors_headers(resp)
         return resp
     return wrapper
 
