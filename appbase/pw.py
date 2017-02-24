@@ -40,16 +40,18 @@ def dbtransaction(f):
     wrapper that make db transactions automic
     note db connections are used only when it is needed (hence there is no usual connection open/close)
     """
-    @wraps(f)
-    def wrapper(*args, **kw):
-        try:
-            with db.transaction():
-                result = f(*args, **kw)
-        finally:
-            if not db.is_closed():
-                db.close()
-        return result
-    return wrapper
+    if getattr(settings, 'DB_TRANSACTIONS_ENABLED', True):
+        @wraps(f)
+        def wrapper(*args, **kw):
+            try:
+                with db.transaction():
+                    result = f(*args, **kw)
+            finally:
+                if not db.is_closed():
+                    db.close()
+            return result
+        return wrapper
+    return f
 
 
 def enumify(TheModel, name_field='name', val_field='id'):
