@@ -11,7 +11,7 @@ ENV = 'dev'
 # Redis
 REDIS_HOST = 'localhost'
 REDIS_PORT = 6379
-REDIS_SESSIONS_DB = 1
+REDIS_DB = 1
 
 # users
 SEND_WELCOME_EMAIL = False
