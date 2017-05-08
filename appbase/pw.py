@@ -27,8 +27,8 @@ class BaseModel(Model):
         database = db
         only_save_dirty = True
 
-    def to_dict(self, only=None, recurse=False):
-        return model_to_dict(self, only=only, recurse=recurse)
+    def to_dict(self, only=None, exclude=None, recurse=False):
+        return model_to_dict(self, only=only, exclude=exclude, recurse=recurse)
 
 
 class CommonModel(BaseModel):
