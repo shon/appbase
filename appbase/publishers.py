@@ -2,7 +2,7 @@ import datetime
 import json
 import random
 import sys
-import urllib
+import urllib.parse
 
 if sys.version[0] == '2':
     from functools32 import wraps, lru_cache
@@ -38,7 +38,7 @@ def flaskapi(app, f):
         session_id = request.cookies.get('session_id')
         if session_id:
             if request.environ['REQUEST_METHOD']:
-                session_id = urllib.unquote(session_id)
+                session_id = urllib.parse.unquote(session_id)
             context.current.sid = session_id
         status_code = 200
         if request.method == 'OPTIONS':
