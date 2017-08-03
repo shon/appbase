@@ -1,7 +1,10 @@
 import datetime
 import json
+import logging
 import random
 import sys
+
+import settings
 
 if sys.version[0] == '2':
     import urllib
@@ -13,10 +16,14 @@ else:
 from flask import request, jsonify, make_response, Response
 
 from appbase.flaskutils import add_cors_headers, jsonify_unsafe
-from appbase.pw import dbtransaction
 from appbase.errors import BaseError, AccessDenied, NotFoundError
 import appbase.users.sessions as sessionlib
 import appbase.context as context
+
+if settings.DB_TRANSACTIONS_ENABLED:
+    from appbase.pw import dbtransaction
+else:
+    dbtransaction = lambda f: f
 
 
 cache = lru_cache()
@@ -51,22 +58,22 @@ def flaskapi(app, f):
             except AccessDenied as err:
                 result = err.to_dict()
                 status_code = 403
-                app.logger.exception('Access Denied error: ')
+                logging.exception('Access Denied error: ')
             except NotFoundError as err:
                 result = err.to_dict()
                 status_code = err.code or 404
-                app.logger.exception('Object not found error: ')
+                logging.exception('Object not found error: ')
             except BaseError as err:
-                app.logger.exception('API Execution error: ')
+                logging.exception('API Execution error: ')
                 result = err.to_dict()
                 status_code = getattr(err, 'code', 500)
             except Exception as err:
                 err_id = str(random.random())[2:]
-                app.logger.exception('Unhandled API Execution error [%s]: ', err_id)
+                logging.exception('Unhandled API Execution error [%s]: ', err_id)
                 result = {'msg': ('Server error: ' + err_id)}
                 status_code = 500
                 kw_s = dict((k, str(v)[:50]) for (k, v) in kw.items())
-                app.logger.error('[%s] parameters: %s', err_id, kw_s)
+                logging.error('[%s] parameters: %s', err_id, kw_s)
             if isinstance(result, dict):
                 resp = jsonify(result)
             elif isinstance(result, Response):
@@ -132,6 +139,7 @@ def add_url_rule(app, url, handler, methods):
 
 
 def get_or_not_found(f):
+    @wraps(f)
     def wrapper(*args, **kw):
         ret = f(*args, **kw)
         if ret is None:
