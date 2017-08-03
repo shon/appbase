@@ -1,3 +1,4 @@
+import appbase.context as context
 import appbase.redisutils as redisutils
 from appbase.helpers import gen_random_token as gen_sid
 from base64 import b64encode, b64decode
@@ -66,3 +67,12 @@ def destroy_all():
     rconn.delete(keys)
     keys = rconn.keys(rev_lookup_key + '*')
     rconn.delete(keys)
+
+
+# Simple debugging helper
+def whoami():
+    sid = hasattr(context.current, 'sid') and context.current.sid
+    uid, groups = None, None
+    if sid:
+        uid, groups = sid2uidgroups(sid)
+    return {'sid': sid, 'uid': uid, 'groups': groups}
