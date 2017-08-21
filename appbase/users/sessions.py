@@ -3,7 +3,7 @@ from appbase.helpers import gen_random_token as gen_sid
 from base64 import b64encode, b64decode
 
 rconn = redisutils.rconn
-session_key = lambda sid: 'session:' + sid
+session_key = lambda sid: 'session:' + str(sid)
 rev_lookup_key = 'uid:sid'
 
 
@@ -12,7 +12,7 @@ def create(uid, groups, ttl=(30 * 24 * 60 * 60)):
     if sid:
         return sid
     uidgroups = str(uid) + ':' + (':'.join(groups) if groups else '')
-    sid = gen_sid() + b64encode(uidgroups)
+    sid = gen_sid() + b64encode(uidgroups.encode()).decode()
     rconn.hset(session_key(sid), 'sid', sid)
     rconn.hset(rev_lookup_key, uid, sid)
     return sid
@@ -35,7 +35,7 @@ def sid2uidgroups(sid):
     """
     => uid (int), groups (list)
     """
-    uidgroups_list = b64decode(sid[43:]).split(':')
+    uidgroups_list = b64decode(sid[43:]).decode().split(':')
     uid = int(uidgroups_list[0])
     groups = uidgroups_list[1:]
     return uid, groups
