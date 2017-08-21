@@ -3,7 +3,7 @@ from appbase.helpers import gen_random_token as gen_sid
 from base64 import b64encode, b64decode
 
 rconn = redisutils.rconn
-session_key = lambda sid: 'session:' + str(sid)
+session_key = lambda sid: 'session:' + sid
 rev_lookup_key = 'uid:sid'
 
 
