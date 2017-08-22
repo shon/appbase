@@ -55,5 +55,7 @@ def send_email(sender, recipient, subject, text=None, html=None, images=[], repl
 
 
 def gen_random_token():
-    return b64encode(hashlib.sha256(str(random.getrandbits(256))).digest(),
-                     ''.join(random.sample(settings.SALT, 2))).rstrip('==')
+    return b64encode(
+        hashlib.sha256(str(random.getrandbits(256)).encode()).digest(),
+        ''.join(random.sample(settings.SALT, 2)).encode()
+        ).decode().rstrip('==')
