@@ -39,9 +39,14 @@ def login(token=None, authorization_response=None):
     if not token:
         google = OAuth2Session(settings.G_CLIENT_ID, scope=settings.G_SCOPE, redirect_uri=settings.G_REDIRECT_URI)
         token_url = "https://accounts.google.com/o/oauth2/token"
-        token = google.fetch_token(token_url, client_secret=settings.G_CLIENT_SECRET, authorization_response=authorization_response)
+        token = google.fetch_token(
+            token_url,
+            client_secret=settings.G_CLIENT_SECRET,
+            authorization_response=authorization_response,
+            verify=False
+            )
     google = OAuth2Session(settings.G_CLIENT_ID, token=token)
-    ginfo = google.get('https://www.googleapis.com/oauth2/v1/userinfo').json()
+    ginfo = google.get('https://www.googleapis.com/oauth2/v1/userinfo', verify=False).json()
     email = ginfo['email']
     uid = userapis.uid_by_email(email)
     domain = getattr(settings, 'G_DOMAIN', None)
