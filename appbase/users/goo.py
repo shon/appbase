@@ -42,11 +42,10 @@ def login(token=None, authorization_response=None):
         token = google.fetch_token(
             token_url,
             client_secret=settings.G_CLIENT_SECRET,
-            authorization_response=authorization_response,
-            verify=False
+            authorization_response=authorization_response
             )
     google = OAuth2Session(settings.G_CLIENT_ID, token=token)
-    ginfo = google.get('https://www.googleapis.com/oauth2/v1/userinfo', verify=False).json()
+    ginfo = google.get('https://www.googleapis.com/oauth2/v1/userinfo').json()
     email = ginfo['email']
     uid = userapis.uid_by_email(email)
     domain = getattr(settings, 'G_DOMAIN', None)
