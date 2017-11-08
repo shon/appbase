@@ -38,7 +38,7 @@ def extract_kw(request):
             {}
 
 
-def flaskapi(app, f):
+def flaskapi(app, f, jsonify_result=True):
     @wraps(f)
     def wrapper(*args, **kw):
         context.current.uid = 0
@@ -80,7 +80,8 @@ def flaskapi(app, f):
                 resp = result
                 status_code = resp.status_code
             else:
-                resp = make_response(jsonify_unsafe(result))
+                result = jsonify_unsafe(result) if jsonify_result else result
+                resp = make_response(result)
             resp.status_code = status_code
         #add_cors_headers(resp)
         return resp
@@ -128,13 +129,13 @@ def api_factory(handler):
     return protected(cached(dbtransaction(handler)))
 
 
-def add_url_rule(app, url, handler, methods):
+def add_url_rule(app, url, handler, methods, jsonify_result=True):
     # add debugging, inspection here
     print('%s -> %s %s' % (url, handler, str(methods)))
     if not 'OPTIONS' in methods:
         methods.append('OPTIONS')
     endpoint = url + '-' + str(methods)
-    f = flaskapi(app, api_factory(handler))
+    f = flaskapi(app, api_factory(handler), jsonify_result=jsonify_result)
     app.add_url_rule(url, endpoint, f, methods=methods)
 
 
@@ -216,9 +217,9 @@ class HTTPPublisher(object):
         self.app = flask_app
         self.urls_prefix = api_urls_prefix
 
-    def add_mapping(self, url, handler, methods=['GET']):
+    def add_mapping(self, url, handler, methods=['GET'], jsonify_result=True):
         """
         Add a mapping for a callable.
         """
         url = (self.urls_prefix + url) if not url.startswith('/') else url
-        add_url_rule(self.app, url, handler, methods=methods)
+        add_url_rule(self.app, url, handler, methods=methods, jsonify_result=jsonify_result)
