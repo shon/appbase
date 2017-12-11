@@ -1,6 +1,9 @@
 import os
 
-import settings
+try:
+    from converge import settings
+except ImportError:
+    import settings
 
 
 def local_path(path):
