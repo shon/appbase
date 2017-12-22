@@ -20,7 +20,7 @@ def green_pg():
 def setdefaultencoding():
     if sys.version[0] == '2':
         reload(sys)
-        sys.setdefaultencoding("utf-8")
+        sys.setdefaultencoding('utf-8')
 
 
 def check_settings(conf):
@@ -39,7 +39,12 @@ def check_settings(conf):
     print('Using {dev_settings_path}'.format(**d))
 
 
-def configure_logging(logfile, debug=True):
+def configure_logger(name='appbase', logfile='app.log', debug=True):
+    """
+    name: logger name
+    logfile: log file name (file will be created in logs dir)
+    debug: set loglevel to debug T/F
+    """
     level = logging.DEBUG if debug else logging.INFO
     logdir = abspath(local_path('logs'))
     if not os.path.exists(logdir):
@@ -49,7 +54,13 @@ def configure_logging(logfile, debug=True):
     file_handler.setLevel(level)
     formatter = logging.Formatter('[%(levelname)s] %(asctime)s: %(message)s')
     file_handler.setFormatter(formatter)
-    logger = logging.getLogger()
+    logger = logging.getLogger(name)
     logger.addHandler(file_handler)
     logger.setLevel(level)
     return logger
+
+
+def configure_logging(logfile, debug=True):
+    # DEPRECATED: Use configure_logger instead
+    # Will be around few more days for compatibility reasons
+    return configure_logger(None, debug=debug)

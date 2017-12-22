@@ -31,7 +31,7 @@ def sid2uidgroups(sid):
     """
     => uid (int), groups (list)
     """
-    uidgroups_list = b64decode(sid[43:]).split(':')
+    uidgroups_list = b64decode(sid[43:]).split(b':')
     uid = int(uidgroups_list[0])
     groups = uidgroups_list[1:]
     return uid, groups

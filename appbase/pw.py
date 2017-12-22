@@ -1,3 +1,4 @@
+import os
 import sys
 import datetime
 if sys.version[0] == '2':
@@ -27,8 +28,8 @@ class BaseModel(Model):
         database = db
         only_save_dirty = True
 
-    def to_dict(self, only=None, recurse=False):
-        return model_to_dict(self, only=only, recurse=recurse)
+    def to_dict(self, only=None, exclude=None, recurse=False):
+        return model_to_dict(self, only=only, exclude=exclude, recurse=recurse)
 
 
 class CommonModel(BaseModel):
@@ -72,3 +73,7 @@ def enumify(TheModel, name_field='name', val_field='id'):
     fields = getattr(TheModel, name_field), getattr(TheModel, val_field)
     data = list((name.replace(' ', '_').lower(), v) for (name, v) in TheModel.select(*fields).tuples())
     return Enum(TheModel.__name__, data)
+
+def dbc():
+    pid = os.getpid()
+    return '[%s]: %s:%s' % (pid, len(db._in_use), db.max_connections)
