@@ -3,7 +3,10 @@ import os
 from requests_oauthlib import OAuth2Session
 from requests_oauthlib.compliance_fixes import facebook_compliance_fix
 
-import settings
+try:
+    from converge import settings
+except Exception as err:
+    import settings
 
 authorization_base_url = 'https://www.facebook.com/dialog/oauth'
 token_url = 'https://graph.facebook.com/oauth/access_token'
