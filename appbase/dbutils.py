@@ -11,11 +11,13 @@ import settings
 
 logger = configure_logger('appbase', 'migration.log', settings.DEBUG)
 migrator = PostgresqlMigrator(db)
-MIGRATIONS_FOLDER_PATH = 'arnold_config/migrations'
+MIGRATIONS_DIR = 'arnold_config/migrations'
 
 
 def drop_empty_create_table(model):
-    '''Drop an empty table and then create a table or Create a table if no table is there'''
+    """
+    Drop an empty table (if it exists) and then create a table
+    """
     table_name = model._meta.db_table
     if model.table_exists():
         query = "SELECT CASE WHEN EXISTS (SELECT 1 FROM {}) THEN True ELSE False END".format(table_name)
@@ -38,7 +40,9 @@ def drop_empty_create_table(model):
 
 
 def add_column(model, column_name, field):
-    '''Add column to table if it doesn't exists'''
+    """
+    Add column to table if it doesn't exist
+    """
     table_name = model._meta.db_table
     if model.table_exists():
         query = "SELECT True FROM information_schema.columns WHERE table_name='{}' and column_name='{}'".format(table_name, column_name)
@@ -57,7 +61,9 @@ def add_column(model, column_name, field):
 
 
 def rename_column(model, old_column_name, new_column_name):
-    '''Add column to table if it doesn't exists'''
+    """
+    Add column to table if it doesn't exist
+    """
     table_name = model._meta.db_table
     if model.table_exists():
         try:
@@ -71,7 +77,9 @@ def rename_column(model, old_column_name, new_column_name):
 
 
 def delete_column(model, column_name):
-    '''Delete column from table if it exists'''
+    """
+    Delete column from table if it exist
+    """
     table_name = model._meta.db_table
     if model.table_exists():
         query = "SELECT True FROM information_schema.columns WHERE table_name='{}' and column_name='{}'".format(table_name, column_name)
@@ -91,7 +99,7 @@ def delete_column(model, column_name):
 
 
 def delta():
-    files = glob.glob(MIGRATIONS_FOLDER_PATH + '/*.py')
+    files = glob.glob(MIGRATIONS_DIR + '/*.py')
     file_on_master = []
     for file in files:
         cmd = 'git cat-file -e origin/master:{0} && echo True'.format(file)
@@ -112,14 +120,14 @@ def delta():
 def create_next_migration_file():
     proc = subprocess.Popen('git rev-parse HEAD', shell=True, stdout=subprocess.PIPE)
     head = proc.communicate()[0].strip().decode()
-    files = glob.glob(MIGRATIONS_FOLDER_PATH + '/*.py')
+    files = glob.glob(MIGRATIONS_DIR + '/*.py')
     for file_name in files:
         if head in file_name:
             print('Migration file already exists: {}'.format(file_name))
             return
 
     filename = '{:03d}_{}.py'.format(len(files), head)
-    filepath = os.path.join(MIGRATIONS_FOLDER_PATH, filename)
+    filepath = os.path.join(MIGRATIONS_DIR, filename)
     with open(filepath, 'w') as f:
         data = 'def up():\n    pass\n'
         f.write(data)
