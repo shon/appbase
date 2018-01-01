@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='appbase',
-    version='0.1',
+    version='0.5',
     url="https://bitbucket.com/shon/appbase",
     classifiers=[
         'Programming Language :: Python',
@@ -20,7 +20,8 @@ setup(
         'psycogreen',
         'flask',
         'html2text',
-        'redis'
+        'redis',
+        'arnold'
       ],
     author='Shekhar Tiwatne',
     author_email='pythonic@gmail.com',
