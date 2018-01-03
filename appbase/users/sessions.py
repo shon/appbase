@@ -18,7 +18,7 @@ session_key = lambda sid: 'session:' + sid
 rev_lookup_key = 'uid:sid'
 
 
-def create(uid, groups, ttl=(30 * 24 * 60 * 60)):
+def create(uid='', groups=[], ttl=(30 * 24 * 60 * 60)):
     sid = rconn.hget(rev_lookup_key, uid)
     if sid:
         return sid
