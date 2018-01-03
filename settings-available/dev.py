@@ -28,3 +28,9 @@ CONFIRMATION_LINK = 'https://example.com/confirm/{TOKEN}'
 MD_HOST = '127.0.0.1'
 MD_PORT = '10000'
 MD_USERNAME = None
+
+# Redis Sessions
+SESSIONS_DB_HOST='localhost'
+SESSIONS_DB_PORT=6379
+SESSIONS_DB_PASSWORD=None
+SESSIONS_DB_NO = 1
