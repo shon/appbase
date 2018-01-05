@@ -19,9 +19,10 @@ rev_lookup_key = 'uid:sid'
 
 
 def create(uid='', groups=[], ttl=(30 * 24 * 60 * 60)):
-    sid = rconn.hget(rev_lookup_key, uid)
-    if sid:
-        return sid
+    if uid:
+        sid = rconn.hget(rev_lookup_key, uid)
+        if sid:
+            return sid.decode()
     uidgroups = str(uid) + ':' + (':'.join(groups) if groups else '')
     sid = gen_sid() + b64encode(uidgroups.encode()).decode()
     rconn.hset(session_key(sid), 'sid', pickle.dumps(sid))
@@ -42,7 +43,7 @@ def get(sid, keys=[]):
         s_values = rconn.hgetall(session_key(sid))
         if s_values:
             session = {k.decode('ascii'): pickle.loads(v) for k, v in s_values.items()}
-    return data
+    return session
 
 
 def get_attribute(sid, attribute):
@@ -64,7 +65,7 @@ def sid2uidgroups(sid):
     => uid (int), groups (list)
     """
     uidgroups_list = b64decode(sid[43:]).decode().split(':')
-    uid = int(uidgroups_list[0])
+    uid = int(uidgroups_list[0]) if uidgroups_list[0] else ''
     groups = uidgroups_list[1:]
     return uid, groups
 
@@ -77,9 +78,8 @@ def update(sid, keyvalues):
 
 
 def update_attribute(sid, attribute, value):
-    key = skey(sid)
+    key = session_key(sid)
     rconn.hset(key, attribute, pickle.dumps(value))
-    rconn.expire(key, settings.SESSION_TTL)
     return True
 
 
