@@ -117,7 +117,7 @@ def test_sessions():
     assert len(sid) > 43
     sid_new = sessionslib.create(uid, groups)
     assert sid == sid_new
-    sessionslib.add_to_session(sid, {k: v})
+    sessionslib.update(sid, {k: v})
     d = sessionslib.get(sid)
     assert d[k] == v
     sessionslib.remove_from_session(sid, k)
@@ -128,7 +128,7 @@ def test_sessions():
 
 
 def test_session_lookups():
-    uids = xrange(10000, 10010)
+    uids = range(10000, 10010)
     groups = ['grp1', 'grp2']
     for uid in uids:
         sid = sessionslib.create(uid, groups)
