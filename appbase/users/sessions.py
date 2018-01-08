@@ -53,11 +53,12 @@ def get_attribute(sid, attribute):
 
 def get_for(uid):
     sid = rconn.hget(rev_lookup_key, uid)
-    return get(sid)
+    return get(sid.decode()) if sid else None
 
 
 def uid2sid(uid):
-    return rconn.hget(rev_lookup_key, uid)
+    sid = rconn.hget(rev_lookup_key, uid)
+    return sid.decode() if sid else None
 
 
 def sid2uidgroups(sid):
