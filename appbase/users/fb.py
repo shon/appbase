@@ -1,20 +1,22 @@
 import os
-import settings
-
-import appbase.users.apis as userapis
 
 from requests_oauthlib import OAuth2Session
 from requests_oauthlib.compliance_fixes import facebook_compliance_fix
 
+try:
+    from converge import settings
+except Exception as err:
+    import settings
+
 authorization_base_url = 'https://www.facebook.com/dialog/oauth'
 token_url = 'https://graph.facebook.com/oauth/access_token'
-redirect_uri = settings.FB_RETURN_URL
 
 os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = 'True'
 
 
 def create_fb_session():
-    session = OAuth2Session(settings.FB_APP_ID, redirect_uri=redirect_uri,
+    session = OAuth2Session(settings.FB_APP_ID,
+                            redirect_uri=settings.FB_RETURN_URL,
                             scope=settings.FB_SCOPE)
     return facebook_compliance_fix(session)
 
@@ -38,14 +40,12 @@ def connect(authorization_response=None):
                                 client_secret=settings.FB_APP_SECRET,
                                 auth=False,
                                 authorization_response=authorization_response)
-    # session = OAuth2Session(settings.FB_APP_ID, token=token)
-    info_url = 'https://graph.facebook.com/me?fields=id,email'
-    info = session.get(info_url).json()
-    email = info['email']
-    uid = userapis.uid_by_email(email)
-    if not uid:
-        uid = userapis.create(name=info['name'], email=email,
-                              connection={'provider': 'facebook',
-                                          'token': token})
-    userinfo = {'name': info['name'], 'email': info['email'], 'id': uid}
-    return userapis.authenticate(email=info['email'], _oauthed=True), userinfo
+    info_url = 'https://graph.facebook.com/me?fields=' + settings.FB_USER_FIELDS
+    return token, session.get(info_url).json()
+
+
+def fetch_info(access_token):
+    session = OAuth2Session(token={'access_token': access_token})
+    info_url = 'https://graph.facebook.com/me?fields=' + settings.FB_USER_FIELDS
+    return session.get(info_url).json()
+
