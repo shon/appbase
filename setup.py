@@ -21,7 +21,8 @@ setup(
         'flask',
         'html2text',
         'redis',
-        'arnold'
+        'arnold',
+        'requests_oauthlib'
       ],
     author='Shekhar Tiwatne',
     author_email='pythonic@gmail.com',
