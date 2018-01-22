@@ -5,14 +5,14 @@ import appbase.users.sessions as sessions
 def test_create_session():
 
     sid = sessions.create()
-    assert isinstance(sid, str) and len(sid) == 47
+    assert isinstance(sid, str) and len(sid) == 43
 
 
 def test_get_session():
 
     sid = sessions.create()
     data = sessions.get(sid)
-    assert data == {'sid': sid}
+    assert data == {'groups': [], 'uid': ''}
 
 
 def test_get_attribute():
