@@ -23,9 +23,9 @@ def create(uid='', groups=[], ttl=(30 * 24 * 60 * 60)):
         sid = rconn.hget(rev_lookup_key, uid)
         if sid:
             return sid.decode()
-    uidgroups = str(uid) + ':' + (':'.join(groups) if groups else '')
-    sid = gen_sid() + b64encode(uidgroups.encode()).decode()
-    rconn.hset(session_key(sid), 'sid', pickle.dumps(sid))
+    sid = gen_sid()
+    rconn.hset(session_key(sid), 'uid', pickle.dumps(uid))
+    rconn.hset(session_key(sid), 'groups', pickle.dumps(groups))
     rconn.hset(rev_lookup_key, uid, sid)
     return sid
 
@@ -65,10 +65,8 @@ def sid2uidgroups(sid):
     """
     => uid (int), groups (list)
     """
-    uidgroups_list = b64decode(sid[43:]).decode().split(':')
-    uid = int(uidgroups_list[0]) if uidgroups_list[0] else ''
-    groups = uidgroups_list[1:]
-    return uid, groups
+    session = get(sid, ['uid', 'groups'])
+    return session['uid'], session['groups']
 
 
 def update(sid, keyvalues):
@@ -76,6 +74,11 @@ def update(sid, keyvalues):
     keyvalues = {k: pickle.dumps(v) for k, v in list(keyvalues.items())}
     rconn.hmset(sk, keyvalues)
     return True
+
+
+def update_for(uid, keyvalues):
+    sid = uid2sid(uid)
+    return update(sid, keyvalues) if sid else None
 
 
 def update_attribute(sid, attribute, value):
