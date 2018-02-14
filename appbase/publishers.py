@@ -25,6 +25,7 @@ if settings.DB_TRANSACTIONS_ENABLED:
 else:
     dbtransaction = lambda f: f
 
+SESSION_COOKIE_NAME = settings.get('SESSION_COOKIE_NAME', '__s')
 
 cache = lru_cache()
 cache_ttl = datetime.timedelta(0, (10*60))
@@ -43,7 +44,7 @@ def flaskapi(app, f, jsonify_result=True):
     def wrapper(*args, **kw):
         context.current.uid = 0
         context.current.groups = []
-        session_id = request.cookies.get('session_id')
+        session_id = request.cookies.get(SESSION_COOKIE_NAME)
         if session_id:
             if request.environ['REQUEST_METHOD']:
                 session_id = urllib.unquote(session_id)
@@ -223,3 +224,4 @@ class HTTPPublisher(object):
         """
         url = (self.urls_prefix + url) if not url.startswith('/') else url
         add_url_rule(self.app, url, handler, methods=methods, jsonify_result=jsonify_result)
+        print('%s -> %s' % (url, handler))
