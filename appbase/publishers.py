@@ -25,7 +25,7 @@ if settings.DB_TRANSACTIONS_ENABLED:
 else:
     dbtransaction = lambda f: f
 
-SESSION_COOKIE_NAME = settings.get('SESSION_COOKIE_NAME', '__s')
+SESSION_COOKIE_NAME = getattr(settings, 'SESSION_COOKIE_NAME', '__s')
 
 cache = lru_cache()
 cache_ttl = datetime.timedelta(0, (10*60))
