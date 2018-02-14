@@ -15,7 +15,7 @@ setup(
         'blinker',
         'jsonschema',
         'gevent',
-        'peewee=2.10.2',
+        'peewee==2.10.2',
         'psycopg2',
         'psycogreen',
         'flask',
