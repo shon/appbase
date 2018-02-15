@@ -1,49 +1,64 @@
 import os
-
 from requests_oauthlib import OAuth2Session
 
-try:
-    from converge import settings
-except Exception as err:
-    import settings
+from appbase.errors import AccessDenied
+import appbase.users.apis as userapis
 
-authorization_base_url = "https://accounts.google.com/o/oauth2/auth"
-token_url = 'https://accounts.google.com/o/oauth2/token'
+import settings
+
 
 if not settings.G_REDIRECT_URI.startswith('https'):
     os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = 'True'
 
+# http://example.com/?state=QjaZneV6q1Lw1PDeGkIBpGN6zGFGD1&code=4/izHiQ5fkIYLJ-CHaKO-sHLZphAZ1oLCWTB0kZSYQPMc#
+#
+# {
+#      "id": "101040630350628241843",
+#      "email": "someone@example.com",
+#      "verified_email": true,
+#      "name": "Fname Lname",
+#      "given_name": "Fname",
+#      "family_name": "Lname",
+#      "picture": "https://lh6.googleusercontent.com/-ROwm2oX4xQ0/AAAAAAAAAAI/AAAAAAAAAAA/7aSyJfrQWf0/photo.jpg",
+#      "locale": "en",
+#      "hd": "example.com"
+# }
 
-def create_goo_session():
-    session = OAuth2Session(settings.G_CLIENT_ID,
-                            redirect_uri=settings.G_REDIRECT_URI,
-                            scope=settings.G_SCOPE)
-    return session
-
-
-def get_auth_url():
-    # Redirect user to Google for authorization
-    session = create_goo_session()
-    authorization_url, state = session.authorization_url(authorization_base_url, access_type='online')
+def get_signup_url():
+    authorization_base_url = "https://accounts.google.com/o/oauth2/auth"
+    google = OAuth2Session(settings.G_CLIENT_ID, scope=settings.G_SCOPE, redirect_uri=settings.G_REDIRECT_URI)
+    authorization_url, state = google.authorization_url(authorization_base_url, access_type='online')
     return authorization_url
 
 
-def connect(authorization_response=None):
+def login(token=None, authorization_response=None):
     """
-    accepts authorization_response/token and creates user login for that user
-    token: token dict which returned by fb sdk on session.fetch_token
     returns session_id, info
-        (info: {name: name, email: email})
+    info: {name: name, email: email}
     """
-    session = create_goo_session()
-    token = session.fetch_token(token_url,
-                                client_secret=settings.G_CLIENT_SECRET,
-                                authorization_response=authorization_response)
-    userinfo = session.get('https://www.googleapis.com/oauth2/v1/userinfo').json()
-    return token, userinfo
+    if not token:
+        google = OAuth2Session(settings.G_CLIENT_ID, scope=settings.G_SCOPE, redirect_uri=settings.G_REDIRECT_URI)
+        token_url = "https://accounts.google.com/o/oauth2/token"
+        token = google.fetch_token(
+            token_url,
+            client_secret=settings.G_CLIENT_SECRET,
+            authorization_response=authorization_response
+            )
+    google = OAuth2Session(settings.G_CLIENT_ID, token=token)
+    ginfo = google.get('https://www.googleapis.com/oauth2/v1/userinfo').json()
+    email = ginfo['email']
+    uid = userapis.uid_by_email(email)
+    domain = getattr(settings, 'G_DOMAIN', None)
+    if domain and not email.endswith(domain):
+        raise AccessDenied(msg='Access restricted', data={'domain': domain})
+    if not uid:
+        uid = userapis.create(name=ginfo['name'], email=email, connection={'provider': 'google', 'token': token})
+    userinfo = {'name': ginfo['name'], 'email': ginfo['email'], 'id': uid}
+    return userapis.authenticate(email=ginfo['email'], _oauthed=True), userinfo
 
 
-def fetch_info(access_token):
-    session = OAuth2Session(token={'access_token': access_token})
-    userinfo = session.get('https://www.googleapis.com/oauth2/v1/userinfo').json()
-    return userinfo
+def update(email, mod_data):
+    """
+    mod_data: {name: <name>}
+    """
+    return userapis.update(name=name)
