@@ -48,4 +48,3 @@ def fetch_info(access_token):
     session = OAuth2Session(token={'access_token': access_token})
     info_url = 'https://graph.facebook.com/me?fields=' + settings.FB_USER_FIELDS
     return session.get(info_url).json()
-
