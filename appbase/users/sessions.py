@@ -18,7 +18,10 @@ session_key = lambda sid: 'session:' + sid
 rev_lookup_key = 'uid:sid'
 
 
-def create(uid='', groups=[], extra={}, ttl=(30 * 24 * 60 * 60)):
+def create(uid='', groups=[], extras={}, ttl=(30 * 24 * 60 * 60)):
+    """
+    extras (dict): each key-value pair of extras get stored into hset
+    """
     if uid:
         sid = rconn.hget(rev_lookup_key, uid)
         if sid:
@@ -26,8 +29,8 @@ def create(uid='', groups=[], extra={}, ttl=(30 * 24 * 60 * 60)):
     sid = gen_sid()
     rconn.hset(session_key(sid), 'uid', pickle.dumps(uid))
     rconn.hset(session_key(sid), 'groups', pickle.dumps(groups))
-    if extra:
-        rconn.hset(session_key(sid), 'extra', pickle.dumps(extra))
+    for key, value in extras.items():
+        rconn.hset(session_key(sid), key, pickle.dumps(value))
     rconn.hset(rev_lookup_key, uid, sid)
     return sid
 
