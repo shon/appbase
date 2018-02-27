@@ -4,13 +4,14 @@ import appbase.users.sessions as sessionslib
 
 def test_sessions():
     uid, groups, k, v = 98765, ['admin', 'member'], 'foo', 'bar'
-    sid = sessionslib.create(uid, groups)
+    sid = sessionslib.create(uid, groups, info=dict(email='xyz@ss.co'))
     assert len(sid) == 43
     sid_new = sessionslib.create(uid, groups)
     assert sid == sid_new
     sessionslib.update(sid, {k: v})
     d = sessionslib.get(sid)
     assert d[k] == v
+    assert d['info']['email'] == 'xyz@ss.co'
     sessionslib.remove_from_session(sid, k)
     d = sessionslib.get(sid)
     assert k not in d
