@@ -46,14 +46,14 @@ def script_name():
 
 
 def usage():
-    print "Usage: %s [OPTIONS]" % script_name()
-    print """
+    print(("Usage: %s [OPTIONS]" % script_name()))
+    print("""
 OPTIONS
         --host=<localdomain>
         --port=<port number>
         --path=<path to save mails>
         --log=<optional file to append messages to>
-        --background"""
+        --background""")
 
 
 def quit(reason=None):
@@ -75,7 +75,7 @@ def message(text):
         f.write(text + "\n")
         f.close()
     else:
-        print text
+        print(text)
 
 
 def handle_signals():
@@ -123,7 +123,7 @@ def become_daemon():
     except AttributeError:
         print("INFO: --background is unsupported on this platform")
         if sys.platform.find("win") >= 0:
-            print("INFO: Start %s with pythonw.exe instead" % script_name())
+            print(("INFO: Start %s with pythonw.exe instead" % script_name()))
     else:
         if pid:  # we're the parent if pid is set
             os._exit(0)
@@ -148,7 +148,7 @@ def main():
         become_daemon()
     try:
         server = FakeServer((host, port), None, path, '.eml')
-    except socket.error, e:
+    except socket.error as e:
         quit(str(e))
     message("Listening on port %d" % port)
     try:
