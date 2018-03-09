@@ -14,7 +14,7 @@ else:
     from functools import wraps, lru_cache
 
 from flask import request, jsonify, make_response, Response
-
+from flask import current_app
 from appbase.flaskutils import add_cors_headers, jsonify_unsafe
 from appbase.errors import BaseError, AccessDenied, NotFoundError
 import appbase.users.sessions as sessionlib
@@ -42,6 +42,7 @@ def extract_kw(request):
 def flaskapi(app, f, jsonify_result=True):
     @wraps(f)
     def wrapper(*args, **kw):
+        logger = current_app.logger
         context.current.uid = 0
         context.current.groups = []
         session_id = request.cookies.get(SESSION_COOKIE_NAME)
@@ -59,21 +60,21 @@ def flaskapi(app, f, jsonify_result=True):
             except AccessDenied as err:
                 result = err.to_dict()
                 status_code = 403
-                logging.exception('Access Denied error: ')
+                logger.exception('Access Denied error: ')
             except NotFoundError as err:
                 result = err.to_dict()
                 status_code = err.code or 404
-                logging.exception('Object not found error: ')
+                logger.exception('Object not found error: ')
             except BaseError as err:
-                logging.exception('API Execution error: ')
+                logger.exception('API Execution error: ')
                 result = err.to_dict()
                 status_code = getattr(err, 'code', 500)
             except Exception as err:
                 err_id = str(random.random())[2:]
-                logging.exception('Unhandled API Execution error [%s]: ', err_id)
+                logger.exception('Unhandled API Execution error [%s]: ', err_id)
                 result = {'msg': ('Server error: ' + err_id)}
                 status_code = 500
-                logging.error('[%s] parameters: %s', err_id, str(kw)[:400])
+                logger.error('[%s] parameters: %s', err_id, str(kw)[:400])
             if isinstance(result, dict):
                 resp = jsonify(result)
             elif isinstance(result, Response):
