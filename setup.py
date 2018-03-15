@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='appbase',
-    version='0.5',
+    version='0.7',
     url="https://bitbucket.com/shon/appbase",
     classifiers=[
         'Programming Language :: Python',
