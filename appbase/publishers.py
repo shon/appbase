@@ -17,6 +17,7 @@ from flask import request, jsonify, make_response, Response
 from flask import current_app
 from appbase.flaskutils import add_cors_headers, jsonify_unsafe
 from appbase.errors import BaseError, AccessDenied, NotFoundError
+from appbase.errors import InvalidSessionError
 import appbase.users.sessions as sessionlib
 import appbase.context as context
 
@@ -96,12 +97,19 @@ def protected(f):
         login_required = getattr(f, 'login_required', None)
         roles_required = getattr(f, 'roles_required', None)
 
-        if (login_required or roles_required) and not session_id:
-            raise AccessDenied(msg='session not found')
-
-        if session_id:
-            uid, groups = sessionlib.sid2uidgroups(session_id)
-            context.set_context(sid=session_id, uid=uid, groups=groups)
+        if login_required or roles_required:
+            if session_id:
+                uid, groups = sessionlib.sid2uidgroups(session_id)
+            else:
+                raise AccessDenied(msg='session not found')
+        elif session_id:
+            try:
+                uid, groups = sessionlib.sid2uidgroups(session_id)
+            except InvalidSessionError:
+                uid, groups = None, []
+        else:
+            uid, groups = None, []
+        context.set_context(sid=session_id, uid=uid, groups=groups)
 
         if roles_required and not set(context.current.groups).intersection(roles_required):
             raise AccessDenied(data=dict(groups=groups, roles_required=roles_required))
