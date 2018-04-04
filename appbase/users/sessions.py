@@ -4,6 +4,7 @@ from base64 import b64encode, b64decode
 
 import appbase.context as context
 from appbase.helpers import gen_random_token as gen_sid
+from appbase.errors import InvalidSessionError
 
 import settings
 
@@ -40,14 +41,12 @@ def exists(sid):
 
 
 def get(sid, keys=[]):
-    session = {}
+    s_values = rconn.hgetall(session_key(sid))
+    if not s_values:
+        raise InvalidSessionError()
+    session = {k.decode(): pickle.loads(v) for k, v in s_values.items()}
     if keys:
-        s_values = rconn.hmget(session_key(sid), keys)
-        session = {k: pickle.loads(v) if v else v for k, v in zip(keys, s_values)}
-    else:
-        s_values = rconn.hgetall(session_key(sid))
-        if s_values:
-            session = {k.decode('ascii'): pickle.loads(v) for k, v in s_values.items()}
+        session = {k: session.get(k, None) for k in keys}
     return session
 
 

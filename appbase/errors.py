@@ -22,3 +22,8 @@ class AccessDenied(BaseError):
 
 class ValidationError(BaseError):
     code = 400
+
+
+class InvalidSessionError(BaseError):
+    code = 401
+    msg = 'Invalid session'
