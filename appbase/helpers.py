@@ -59,3 +59,28 @@ def gen_random_token():
         hashlib.sha256(str(random.getrandbits(256)).encode()).digest(),
         ''.join(random.sample(settings.SALT, 2)).encode()
         ).decode().rstrip('==')
+
+
+def make_key_of_params(args, kwds, f_name, seperator='seperator', strict=False):
+    """Generates a unique key of params and function name.
+
+    Keyword arguments:
+    seperator - Any unique string to seperate args and kwds.
+    strict - If strict False, unhashable types like list are filtered.
+    """
+    key = args
+    key += (f_name, seperator)
+    if kwds:
+        for item in kwds.items():
+            key += item
+    if not strict:
+        key = tuple(filter(lambda x: isinstance(x, (int, str, bool, float, tuple, frozenset)), key))
+    return key
+
+
+def notify_tech(trace, f_name, now):
+    sender = settings.TECH_EMAIL
+    recipient = settings.TECH_EMAIL
+    subject = 'Alert | error in %s [%s]' % (f_name, now)
+    text = trace
+    send_email(sender, recipient, subject, text)
