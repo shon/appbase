@@ -1,16 +1,24 @@
-from appbase.decorators import fail_safe
+import random
 
+from appbase.decorators import failsafe
 
-def test_fail_safe():
-    flag = False
-    @fail_safe
+c = 0
+
+def test_failsafe():
+    global c
+    @failsafe
     def add(a, b):
-        if flag:
+        global c
+        print(c)
+        if c and c % 2:
+            c += 1
+            print('F')
             # trying to raise exception
             1/0
-        flag=True
         return a + b
 
-    assert add(1, 2) == 3
-    
-    assert add(1, 2) == 3
+    for i in range(9):
+        assert add(1, 2) == 3
+        assert add(1, 7) == 8
+        assert add(1, b=3) == 4
+        c += 1

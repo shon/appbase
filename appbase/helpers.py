@@ -61,26 +61,24 @@ def gen_random_token():
         ).decode().rstrip('==')
 
 
-def make_key_of_params(args, kwds, f_name, seperator='seperator', strict=False):
-    """Generates a unique key of params and function name.
+def make_key_from_params(fname, args, kw={}, seperator=':', strict=True):
+    """
+    Generates a unique key of params and function name.
 
-    Keyword arguments:
     seperator - Any unique string to seperate args and kwds.
     strict - If strict False, unhashable types like list are filtered.
     """
-    key = args
-    key += (f_name, seperator)
-    if kwds:
-        for item in kwds.items():
-            key += item
-    if not strict:
+    key = (fname,) + args + (seperator,)
+    for item in kw.items():
+        key += item
+    if strict:
         key = tuple(filter(lambda x: isinstance(x, (int, str, bool, float, tuple, frozenset)), key))
     return key
 
 
-def notify_tech(trace, f_name, now):
-    sender = settings.TECH_EMAIL
-    recipient = settings.TECH_EMAIL
-    subject = 'Alert | error in %s [%s]' % (f_name, now)
+def notify_dev(trace, f_name, now):
+    sender = settings.DEV_EMAIL
+    recipient = settings.DEV_EMAIL
+    subject = 'Alert | Error in %s [%s]' % (f_name, now)
     text = trace
     send_email(sender, recipient, subject, text)
