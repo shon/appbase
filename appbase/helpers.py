@@ -66,7 +66,7 @@ def make_key_from_params(fname, args, kw={}, seperator=':', strict=True):
     Generates a unique key of params and function name.
 
     seperator - Any unique string to seperate args and kwds.
-    strict - If strict False, unhashable types like list are filtered.
+    strict - If strict True, unhashable types like list are filtered.
     """
     key = (fname,) + args + (seperator,)
     for item in kw.items():
