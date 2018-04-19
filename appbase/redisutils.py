@@ -1,10 +1,12 @@
 import sys
 import redis
 
-from settings import REDIS_HOST, REDIS_PORT, REDIS_DB
+from settings import REDIS_HOST, REDIS_PORT, REDIS_DB, REDIS_PASSWORD
 
-if sys.version[0] == '2':
-    rconn = redis.Redis(host=REDIS_HOST, port=REDIS_PORT, db=REDIS_DB)
-else:
-    rconn = redis.Redis(
-        host=REDIS_HOST, port=REDIS_PORT, db=REDIS_DB, decode_responses=True)
+rconn = redis.Redis(
+    db=REDIS_DB,
+    host=REDIS_HOST,
+    port=REDIS_PORT,
+    password=REDIS_PASSWORD,
+    decode_responses=True
+)
