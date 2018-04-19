@@ -1,5 +1,8 @@
 import redis
-import pickle
+try:
+    import _pickle as pickle
+except:
+    import pickle
 from base64 import b64encode, b64decode
 
 import appbase.context as context
