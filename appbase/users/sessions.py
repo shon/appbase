@@ -14,24 +14,37 @@ rconn = redis.Redis(
     db=settings.SESSIONS_DB_NO
     )
 
-session_key = lambda sid: 'session:' + sid
-rev_lookup_key = 'uid:sid'
+_sep = ':'
+session_key = ('session' + _sep).__add__
+rev_lookup_prefix = 'uid' + _sep
+rev_lookup_key = lambda uid: rev_lookup_prefix + str(uid)
 
 
-def create(uid='', groups=[], extras={}, ttl=(30 * 24 * 60 * 60)):
+def create(uid='', groups=None, extras=None, ttl=(30 * 24 * 60 * 60)):
     """
+    groups: list
     extras (dict): each key-value pair of extras get stored into hset
     """
     if uid:
-        sid = rconn.hget(rev_lookup_key, uid)
+        sid = uid2sid(uid)
         if sid:
-            return sid.decode()
+            return sid
+
     sid = gen_sid()
-    rconn.hset(session_key(sid), 'uid', pickle.dumps(uid))
-    rconn.hset(session_key(sid), 'groups', pickle.dumps(groups))
-    for key, value in extras.items():
-        rconn.hset(session_key(sid), key, pickle.dumps(value))
-    rconn.hset(rev_lookup_key, uid, sid)
+    key = session_key(sid)
+
+    session_dict = {'uid': uid, 'groups': groups or []}
+    if extras:
+        session_dict.update(extras)
+    session = {k: pickle.dumps(v) for k, v in session_dict.items()}
+    rconn.hmset(key, session)
+
+    if uid:
+        rev_key = rev_lookup_key(uid)
+        rconn.set(rev_key, sid)
+        rconn.expire(rev_key, ttl)
+
+    rconn.expire(key, ttl)
     return sid
 
 
@@ -56,14 +69,14 @@ def get_attribute(sid, attribute):
     return pickle.loads(value) if value else None
 
 
-def get_for(uid):
-    sid = rconn.hget(rev_lookup_key, uid)
-    return get(sid.decode()) if sid else None
-
-
 def uid2sid(uid):
-    sid = rconn.hget(rev_lookup_key, uid)
+    sid = rconn.get(rev_lookup_key(uid))
     return sid.decode() if sid else None
+
+
+def get_for(uid):
+    sid = uid2sid(uid)
+    return get(sid.decode()) if sid else None
 
 
 def sid2uidgroups(sid):
@@ -102,14 +115,14 @@ def destroy(sid):
     uid = sid2uidgroups(sid)[0]
     sk = session_key(sid)
     rconn.delete(sk)
-    rconn.hdel(rev_lookup_key, uid)
+    rconn.delete(rev_lookup_key(uid))
     return True
 
 
 def destroy_all():
     keys = rconn.keys(session_key('*'))
     rconn.delete(keys)
-    keys = rconn.keys(rev_lookup_key + '*')
+    keys = rconn.keys(rev_lookup_prefix + '*')
     rconn.delete(keys)
 
 
