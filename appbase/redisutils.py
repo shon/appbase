@@ -1,12 +1,11 @@
 import sys
 import redis
-
-from settings import REDIS_HOST, REDIS_PORT, REDIS_DB, REDIS_PASSWORD
+import settings
 
 rconn = redis.Redis(
-    db=REDIS_DB,
-    host=REDIS_HOST,
-    port=REDIS_PORT,
-    password=REDIS_PASSWORD,
+    db=settings.REDIS_DB,
+    host=settings.REDIS_HOST,
+    port=settings.REDIS_PORT,
+    password=getattr(settings, 'REDIS_PASSWORD', None),
     decode_responses=True
 )
