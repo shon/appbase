@@ -199,13 +199,16 @@ def authenticate(email, password='', _oauthed=False):
     """
     if not validate_email(email):
         raise InvalidEmailError(email)
-    user = User.get(User.email == email.lower())
+    email = email.lower()
+    user = User.get(User.email == email)
     if not user:
         raise EmailiDoesNotExistError(email)
     if _oauthed:
-        return sessionslib.create(user.id, user.groups)
+        return sessionslib.create(user.id, user.groups,
+                                  extras={'email': email, 'name': user.name})
     if user.password == encrypt(password, settings.SALT):
-        return sessionslib.create(user.id, user.groups)
+        return sessionslib.create(user.id, user.groups,
+                                  extras={'email': email, 'name': user.name})
     raise AuthError(email)
 
 
