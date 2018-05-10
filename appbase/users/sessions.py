@@ -122,9 +122,9 @@ def destroy(sid):
 
 def destroy_all():
     keys = rconn.keys(session_key('*'))
-    rconn.delete(keys)
+    rconn.delete(*keys)
     keys = rconn.keys(rev_lookup_prefix + '*')
-    rconn.delete(keys)
+    rconn.delete(*keys)
 
 
 # Simple debugging helper
