@@ -27,3 +27,7 @@ class ValidationError(BaseError):
 class InvalidSessionError(BaseError):
     code = 401
     msg = 'Invalid session'
+
+class InvalidCaptchaError(BaseError):
+    code = 400
+    msg = 'reCaptcha verification failed, refresh and try again.'
