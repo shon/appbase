@@ -77,7 +77,7 @@ def uid2sid(uid):
 
 def get_for(uid):
     sid = uid2sid(uid)
-    return get(sid.decode()) if sid else None
+    return get(sid) if sid else None
 
 
 def sid2uidgroups(sid):
