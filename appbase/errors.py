@@ -27,3 +27,8 @@ class ValidationError(BaseError):
 class InvalidSessionError(BaseError):
     code = 401
     msg = 'Invalid session'
+
+
+class ConflictError(BaseError):
+    code = 409
+    msg = 'Duplicate resource'
