@@ -74,7 +74,7 @@ def flaskapi(app, f, jsonify_result=True):
                 err_id = str(random.random())[2:]
                 logger.exception('Unhandled API Execution error [%s]: ', err_id)
                 result = {'msg': ('Server error: ' + err_id)}
-                status_code = 500
+                status_code = getattr(err, 'code', 500)
                 logger.error('[%s] parameters: %s', err_id, str(kw)[:400])
             if isinstance(result, dict):
                 resp = jsonify(result)
