@@ -120,6 +120,11 @@ def destroy(sid):
     return True
 
 
+def destroy_for(uid):
+    sid = uid2sid(uid)
+    return destroy(sid) if sid else None
+
+
 def destroy_all():
     keys = rconn.keys(session_key('*'))
     rconn.delete(*keys)
