@@ -20,5 +20,5 @@ class User(CommonModel):
 class GroupUser(BaseModel):
     created = DateTimeField(default=datetime.datetime.now)
     ctx = IntegerField(default=0)
-    user_id = ForeignKeyField(User, null=False, on_delete='CASCADE')
+    user_id = ForeignKeyField(User, null=False, on_delete='CASCADE', db_column='user_id_id')
     group = CharField(null=False)
