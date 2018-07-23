@@ -44,12 +44,8 @@ def dbtransaction(f):
     if getattr(settings, 'DB_TRANSACTIONS_ENABLED', True):
         @wraps(f)
         def wrapper(*args, **kw):
-            try:
-                with db.transaction():
-                    result = f(*args, **kw)
-            finally:
-                if not db.is_closed():
-                    db.close()
+            with db.atomic():
+                result = f(*args, **kw)
             return result
         return wrapper
     return f
