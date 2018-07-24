@@ -44,7 +44,10 @@ def dbtransaction(f):
     if getattr(settings, 'DB_TRANSACTIONS_ENABLED', True):
         @wraps(f)
         def wrapper(*args, **kw):
-            with db.atomic():
+            if not db.in_trasaction():
+                with db.transaction():
+                    result = f(*args, **kw)
+            else:
                 result = f(*args, **kw)
             return result
         return wrapper
