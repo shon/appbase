@@ -45,17 +45,16 @@ def dbtransaction(f):
         @wraps(f)
         def wrapper(*args, **kw):
             if not db.in_transaction():
-                try:
+                with db.connection_context():
                     with db.atomic():
                         result = f(*args, **kw)
-                finally:
-                    db.close()
             else:
                 with db.atomic():
                     result = f(*args, **kw)
             return result
         return wrapper
     return f
+
 
 def enumify(TheModel, name_field='name', val_field='id'):
     """
