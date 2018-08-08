@@ -18,7 +18,7 @@ def drop_empty_create_table(model):
     """
     Drop an empty table (if it exists) and then create a table
     """
-    table_name = model._meta.db_table
+    table_name = model._meta.table_name
     if model.table_exists():
         query = "SELECT CASE WHEN EXISTS (SELECT 1 FROM {}) THEN True ELSE False END".format(table_name)
         result = db.execute_sql(query).fetchall()
@@ -43,7 +43,7 @@ def add_column(model, column_name, field):
     """
     Add column to table if it doesn't exist
     """
-    table_name = model._meta.db_table
+    table_name = model._meta.table_name
     if model.table_exists():
         query = "SELECT True FROM information_schema.columns WHERE table_name='{}' and column_name='{}'".format(table_name, column_name)
         result = db.execute_sql(query).fetchall()
@@ -64,7 +64,7 @@ def rename_column(model, old_column_name, new_column_name):
     """
     Add column to table if it doesn't exist
     """
-    table_name = model._meta.db_table
+    table_name = model._meta.table_name
     if model.table_exists():
         try:
             migrate(migrator.rename_column(table_name, old_column_name, new_column_name))
@@ -80,7 +80,7 @@ def delete_column(model, column_name):
     """
     Delete column from table if it exist
     """
-    table_name = model._meta.db_table
+    table_name = model._meta.table_name
     if model.table_exists():
         query = "SELECT True FROM information_schema.columns WHERE table_name='{}' and column_name='{}'".format(table_name, column_name)
         a = db.execute_sql(query).fetchall()
