@@ -45,8 +45,8 @@ def create(uid='', groups=None, extras=None, ttl=(30 * 24 * 60 * 60)):
 
     if uid:
         rev_key = rev_lookup_key(uid)
-        rconn.setex(rev_key, sid, ttl)
-
+        rconn.set(rev_key, sid)
+        rconn.expire(rev_key, ttl)
     rconn.expire(key, ttl)
     return sid
 
