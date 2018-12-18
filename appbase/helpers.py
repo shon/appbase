@@ -14,6 +14,8 @@ else:
 import html2text
 
 import settings
+import appbase.context as context
+from appbase.errors import AccessDenied
 
 
 def send_email(sender, recipient, subject, text=None, html=None, images=[], reply_to=None, bcc=None):
@@ -82,3 +84,24 @@ def notify_dev(trace, f_name, now):
     subject = 'Alert | Error in %s [%s]' % (f_name, now)
     text = trace
     send_email(sender, recipient, subject, text)
+
+
+def match_roles(required_roles, logical_operator, **kw):
+    req_roles = set([role.format(**kw) for role in required_roles])
+    user_roles = set(context.current.groups)
+    if logical_operator == 'any' and not req_roles.intersection(user_roles):
+        raise AccessDenied(
+            data=dict(groups=user_roles, roles_required=req_roles)
+        )
+    elif logical_operator == 'all' and (req_roles - user_roles):
+        raise AccessDenied(
+            data=dict(groups=user_roles, roles_required=req_roles)
+        )
+
+
+def match_any_role(required_roles, **kw):
+    match_roles(required_roles, 'any', **kw)
+
+
+def match_all_roles(required_roles, **kw):
+    match_roles(required_roles, 'all', **kw)
