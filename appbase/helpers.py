@@ -89,11 +89,11 @@ def notify_dev(trace, f_name, now):
 def match_roles(required_roles, logical_operator, **kw):
     req_roles = set([role.format(**kw) for role in required_roles])
     user_roles = set(context.current.groups)
-    if logical_operator == 'any' and not req_roles.intersection(user_roles):
+    if logical_operator == 'any' and user_roles.isdisjoint(req_roles):
         raise AccessDenied(
             data=dict(groups=user_roles, roles_required=req_roles)
         )
-    elif logical_operator == 'all' and (req_roles - user_roles):
+    elif logical_operator == 'all' and not user_roles.issubset(req_roles):
         raise AccessDenied(
             data=dict(groups=user_roles, roles_required=req_roles)
         )
