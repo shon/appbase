@@ -86,14 +86,14 @@ def notify_dev(trace, f_name, now):
     send_email(sender, recipient, subject, text)
 
 
-def match_roles(required_roles, logical_operator, **kw):
-    req_roles = set([role.format(**kw) for role in required_roles])
+def match_roles(required_roles, op, **kw):
+    req_roles = set(role.format(**kw) for role in required_roles)
     user_roles = set(context.current.groups)
-    if logical_operator == 'any' and user_roles.isdisjoint(req_roles):
+    if op == 'any' and user_roles.isdisjoint(req_roles):
         raise AccessDenied(
             data=dict(groups=user_roles, roles_required=req_roles)
         )
-    elif logical_operator == 'all' and not user_roles.issubset(req_roles):
+    elif op == 'all' and not user_roles.issubset(req_roles):
         raise AccessDenied(
             data=dict(groups=user_roles, roles_required=req_roles)
         )
