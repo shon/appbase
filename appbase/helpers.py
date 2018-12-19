@@ -93,7 +93,7 @@ def match_roles(required_roles, op, **kw):
         raise AccessDenied(
             data=dict(groups=user_roles, roles_required=req_roles)
         )
-    elif op == 'all' and not user_roles.issubset(req_roles):
+    elif op == 'all' and not user_roles.issuperset(req_roles):
         raise AccessDenied(
             data=dict(groups=user_roles, roles_required=req_roles)
         )
