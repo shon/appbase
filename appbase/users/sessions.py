@@ -50,6 +50,25 @@ def create(uid='', groups=None, extras=None, ttl=(30 * 24 * 60 * 60)):
     return sid
 
 
+def create_for_api_key(uid, groups, extras=None, ttl=None):
+    """
+    groups: list
+    extras (dict): each key-value pair of extras get stored into hset
+    """
+    sid = gen_sid()
+    key = session_key(sid)
+
+    session_dict = {'uid': uid, 'groups': groups}
+    if extras:
+        session_dict.update(extras)
+    session = {k: pickle.dumps(v) for k, v in session_dict.items()}
+    rconn.hmset(key, session)
+
+    if ttl:
+        rconn.expire(key, ttl)
+    return sid
+
+
 def exists(sid):
     return rconn.exists(session_key(sid))
 
