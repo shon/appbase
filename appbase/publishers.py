@@ -96,11 +96,17 @@ def protected(f):
         session_id = kw.pop('_session_id', None) or hasattr(context.current, 'sid') and context.current.sid
         login_required = getattr(f, 'login_required', None)
         roles_required = getattr(f, 'roles_required', None)
+        session_required = getattr(f, 'session_required', None)
 
         if login_required or roles_required:
             if session_id:
                 uid, groups = sessionlib.sid2uidgroups(session_id)
+                if not uid:
+                    raise AccessDenied(msg='session not found')
             else:
+                raise AccessDenied(msg='session not found')
+        elif session_required:
+            if not sessionlib.exists(session_id):
                 raise AccessDenied(msg='session not found')
         elif session_id:
             try:
