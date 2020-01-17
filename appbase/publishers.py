@@ -125,6 +125,7 @@ def cached(f):
     if hasattr(f, 'cache'):
         cf = cache(f)
         cf.began = datetime.datetime.now()
+        cache_ttl = getattr(f, 'cache_ttl', cache_ttl)
         @wraps(f)
         def wrapper(*args, **kw):
             now = datetime.datetime.now()
