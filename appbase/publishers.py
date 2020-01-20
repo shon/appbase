@@ -125,8 +125,6 @@ def cached(f):
     if hasattr(f, 'cache'):
         cf = cache(f)
         cf.began = datetime.datetime.now()
-        # checks if the function has 'cache_ttl' attribute which stores a specific cache expiry time for it,
-        # else uses the default cache_ttl
         cache_ttl = getattr(f, 'cache_ttl', cache_ttl)
         @wraps(f)
         def wrapper(*args, **kw):
