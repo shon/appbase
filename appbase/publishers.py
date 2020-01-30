@@ -29,7 +29,7 @@ else:
 SESSION_COOKIE_NAME = getattr(settings, 'SESSION_COOKIE_NAME', '__s')
 
 cache = lru_cache()
-cache_ttl = datetime.timedelta(0, (10*60))
+default_cache_ttl = datetime.timedelta(0, (10*60))
 
 
 def extract_kw(request):
@@ -127,7 +127,7 @@ def cached(f):
         cf.began = datetime.datetime.now()
         # checks if the function has 'cache_ttl' attribute which stores a specific cache expiry time for it,
         # else uses the default cache_ttl
-        cache_ttl = getattr(f, 'cache_ttl', cache_ttl)
+        cache_ttl = getattr(f, 'cache_ttl', default_cache_ttl)
         @wraps(f)
         def wrapper(*args, **kw):
             now = datetime.datetime.now()
