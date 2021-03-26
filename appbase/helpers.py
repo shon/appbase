@@ -20,6 +20,7 @@ from appbase.errors import AccessDenied
 
 def send_email(sender, recipient, subject, text=None, html=None, images=[], reply_to=None, bcc=None):
     """
+    recipient: email string or list of email strings
     text: text message. If html is provided and not text, text will be auto generated
     html: html message
     images: list of cid and image paths. eg. [('logo', 'images/logo.png'), ('Bruce', 'images/bat.png')]
@@ -33,7 +34,7 @@ def send_email(sender, recipient, subject, text=None, html=None, images=[], repl
 
     msg['Subject'] = subject
     msg['From'] = sender
-    msg['To'] = recipient
+    msg['To'] = ', '.join(recipient) if isinstance(recipient, list) else recipient
     if bcc:
         msg['bcc'] = bcc
     if reply_to:
