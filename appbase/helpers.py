@@ -52,7 +52,7 @@ def send_email(sender, recipient, subject, text=None, html=None, images=[], repl
     if settings.MD_USERNAME:
         s.login(settings.MD_USERNAME, settings.MD_KEY)
     #s.set_debuglevel(1)
-    s.sendmail(msg['From'], msg['To'], msg.as_string())
+    s.sendmail(msg['From'], recipient, msg.as_string())
 
     s.quit()
 
