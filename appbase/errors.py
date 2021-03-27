@@ -32,3 +32,8 @@ class InvalidSessionError(BaseError):
 class ConflictError(BaseError):
     code = 409
     msg = 'Duplicate resource'
+
+
+class TooManyRequestsError(BaseError):
+    code = 429
+    msg = 'Too many requests'
