@@ -50,6 +50,7 @@ def send_email(sender, recipient, subject, text=None, html=None, images=[], repl
 
     s = smtplib.SMTP(settings.MD_HOST, settings.MD_PORT)
     if settings.MD_USERNAME:
+        s.starttls()
         s.login(settings.MD_USERNAME, settings.MD_KEY)
     #s.set_debuglevel(1)
     s.sendmail(msg['From'], recipient, msg.as_string())
